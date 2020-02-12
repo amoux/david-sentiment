@@ -1,4 +1,4 @@
-# david-sentiment (unsupervised learning)
+# david-sentiment (Unsupervised Learning via Meta-Learning)
 
 **Sentiment Embedding Models from YouTube Comments**
 
@@ -6,7 +6,7 @@
 
 #### TODOS
 - The following features will be added.
-
+  - Include more meta-learners (e.g., Textblob is used in the demo)
   - Multi-head attention (Transformer model)
   - Encoder/Decoder masking
   - Text generation (RNN)
@@ -29,7 +29,7 @@ import david_sentiment.dataset as ds
 batch = ds.BatchDB([ds.Fetch('unbox', '%make a video%'),
                     ds.FetchMany('v1', {"%want to buy ____%", "%I want  ____%"}),])
 
-x_train, x_labels, y_test = ds.fit_batch_to_dataset(batch, config=config)
+x_train, y_labels, y_test = ds.fit_batch_to_dataset(batch, config=config)
 ```
 
 - Train the embedding model.
@@ -37,10 +37,10 @@ x_train, x_labels, y_test = ds.fit_batch_to_dataset(batch, config=config)
 ```python
 from david_sentiment import YTCSentimentModel
 ytc_sentiment = YTCSentimentModel(config)
-ytc_sentiment.train_model()
+ytc_sentiment.train_model(x_train, y_labels)
 ```
 
-- Save the project: Call `save_project()` to create the project directories, saves all essential settings for initiating a previous state, including; the trained-model and tokenizer's vocab files:
+- Save the project: Call `save_project()` to create the project directories which saves all the essential settings for initiating a previous state, including; the trained-model and tokenizer's vocab files:
 
   - config file         : `<project_name>/config.init`
   - trained model       : `<project_name>/model/model.h5`
@@ -121,9 +121,6 @@ ytc_sentiment.print_predict("hello world I am glad this demo worked")
 
 💬 (Textblob=0.0, YTCSentimentModel=98.7844)
   😍 - Make a video about not a smartphone plzzzzzzz
-
-💬 (Textblob=0.0, YTCSentimentModel=96.7084)
-  🤗 - You don’t have to be a bitch.
 
 💬 (Textblob=0.0, YTCSentimentModel=47.5426)
   😶 - Think about that.
