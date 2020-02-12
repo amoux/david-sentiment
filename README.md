@@ -35,11 +35,13 @@ ytc_sentiment.train_model()
 
 ### save
 
-- Creates the project directories, saves all essential settings for initiating a previous state, including; the `trained-model` and `tokenizer's vocab` files:
-  - Config-file         : `<project_name>/config.init`
-  - Trained-model       : `<project_name>/model/model.h5`
-  - Tokenizer-vocab     : `<project_name>/vocab/vocab.pkl`
+- Creates the project directories, saves all essential settings for initiating a previous state, including; the trained-model and tokenizer's vocab files:
+
+  - config file         : `<project_name>/config.init`
+  - trained model       : `<project_name>/model/model.h5`
+  - tokenizer vocab     : `<project_name>/vocab/vocab.pkl`
 
 ```python
 ytc_sentiment.save_project()
 ```
+
