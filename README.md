@@ -7,8 +7,8 @@
 #### TODOS
 - The following features will be added.
 
-  - multi-head attention (Transformer model)
-  - encoder/decoder masking
+  - Multi-head attention (Transformer model)
+  - Encoder/Decoder masking
   - Text generation (RNN)
 
 - Train a custom sentiment model with just a few lines of code - Making it easy to try different configurations or preprocessing techniques.
