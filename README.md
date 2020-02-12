@@ -4,7 +4,7 @@
 
 - Train a custom sentiment model with just a few lines of code - Making it easy to try different configurations or preprocessing techniques.
 
-### start
+### Usage
 
 - Create a new project.
 
@@ -12,8 +12,6 @@
 from david_sentiment import YTCSentimentConfig
 config = YTCSentimentConfig(project_dir="my_model_dir", max_strlen=500)
 ```
-
-### dataset
 
 - Build a large dataset from batch. Fetch based on keyword pattterns or complete sentences.
 
@@ -25,8 +23,6 @@ batch = ds.BatchDB([ds.Fetch('unbox', '%make a video%'),
 x_train, x_labels, y_test = ds.fit_batch_to_dataset(batch, config=config)
 ```
 
-### train
-
 - Train the embedding model.
 
 ```python
@@ -35,9 +31,7 @@ ytc_sentiment = YTCSentimentModel(config)
 ytc_sentiment.train_model()
 ```
 
-### save
-
-- Creates the project directories, saves all essential settings for initiating a previous state, including; the trained-model and tokenizer's vocab files:
+- Save the project: Call `save_project()` to create the project directories, saves all essential settings for initiating a previous state, including; the trained-model and tokenizer's vocab files:
 
   - config file         : `<project_name>/config.init`
   - trained model       : `<project_name>/model/model.h5`
@@ -46,4 +40,3 @@ ytc_sentiment.train_model()
 ```python
 ytc_sentiment.save_project()
 ```
-
