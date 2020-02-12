@@ -1,6 +1,6 @@
-# david-sentiment
+# david-sentiment (unsupervised learning)
 
-## Unsupervised sentiment models from YouTube Comments.
+## Sentiment Embedding Model trained on YouTube Comments
 
 - Train a custom sentiment model with just a few lines of code - Making it easy to try different configurations or preprocessing techniques.
 
