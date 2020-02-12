@@ -10,7 +10,6 @@
 
 ```python
 from david_sentiment import YTCSentimentConfig
-
 config = YTCSentimentConfig(project_dir="my_model_dir", max_strlen=500)
 ```
 
@@ -18,26 +17,24 @@ config = YTCSentimentConfig(project_dir="my_model_dir", max_strlen=500)
 
 ```python
 import david_sentiment.dataset as ds
-
-batch = ds.BatchDB([
-    ds.Fetch('unbox', '%make a video%'),
-    ds.FetchMany('v1', {"%want to buy ____%", "%I want  ____%"}),])
+batch = ds.BatchDB([ds.Fetch('unbox', '%make a video%'),
+                    ds.FetchMany('v1', {"%want to buy ____%", "%I want  ____%"}),])
 
 x_train, x_labels, y_test = ds.fit_batch_to_dataset(batch, config=config)
 ```
 
 - Train the model.
 
+> NOTE: You can override any model-config attribute from either YTCSentimentConfig or YTCSentimentModel. e.g.,
+`ytc_sentiment.epochs = 50`
+
 ```python
 from david_sentiment import YTCSentimentModel
-
 ytc_sentiment = YTCSentimentModel(config)
-# override any config attribute from any instance.
-# ytc_sentiment.epochs = 50
 ytc_sentiment.train_model()
 ```
 
-- Creates the project directories, saves all essential settings for initiating a previous state, including; the `model's` and `tokenizer's vocab` files.
+- Creates the project directories, saves all essential settings for initiating a previous state, including; the `trained-model` and `tokenizer's vocab` files.
 
   - Config-file         : `<project_name>/config.init`
   - Trained-model       : `<project_name>/model/model.h5`
