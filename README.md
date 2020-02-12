@@ -1,10 +1,8 @@
-# david-sentiment
+# david-sentiment (Sentiment from YouTube Comments)
 
 **Unsupervised Learning via Meta-Learning**
 
-> Sentiment models with YouTube Comments
-
-- Why? Because Twitter text-datasets are overrated, and lack ***sentimentalism***; *The excessive expression of feelings of tenderness, sadness, or nostalgia in behavior, writing, or speech.*
+> Why? Because Twitter text-datasets are overrated, and lack ***sentimentalism***; *The excessive expression of feelings of tenderness, sadness, or nostalgia in behavior, writing, or speech.*
 
 #### TODOS
 - The following features will be added.
