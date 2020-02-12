@@ -1,6 +1,8 @@
 # david-sentiment
 
-Unsurpervised sentiment models from **YouTube** Comments. Keep track of different configurations by passing a new name to the `project_dir` parameter.
+### Unsupervised sentiment models from YouTube Comments.
+
+- Train a custom sentiment model with four lines of code - Making it easy to try different configurations or preprocessing techniques.
 
 ## Usage
 
@@ -24,16 +26,18 @@ batch = ds.BatchDB([
 x_train, x_labels, y_test = ds.fit_batch_to_dataset(batch, config=config)
 ```
 
-- Train the model on the `n` epochs.
+- Train the model.
 
 ```python
 from david_sentiment import YTCSentimentModel
 
 ytc_sentiment = YTCSentimentModel(config)
+# override any config attribute from any instance.
+# ytc_sentiment.epochs = 50
 ytc_sentiment.train_model()
 ```
 
-- Save the `Embedding` model and `Tokenizer` vocabulary vectors to file. These files can the be used to restore the ***"session"*** and full functionality. By calling `self.save_project()`:
+- Creates the project directories, saves all essential settings for initiating a previous state, including; the `model's` and `tokenizer's vocab` files.
 
   - Config-file         : `<project_name>/config.init`
   - Trained-model       : `<project_name>/model/model.h5`
