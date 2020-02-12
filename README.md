@@ -2,7 +2,7 @@
 
 ## Unsupervised sentiment models from YouTube Comments.
 
-- Train a custom sentiment model with four lines of code - Making it easy to try different configurations or preprocessing techniques.
+- Train a custom sentiment model with just a few lines of code - Making it easy to try different configurations or preprocessing techniques.
 
 ### start
 
@@ -26,6 +26,8 @@ x_train, x_labels, y_test = ds.fit_batch_to_dataset(batch, config=config)
 ```
 
 ### train
+
+- Train the embedding model.
 
 ```python
 from david_sentiment import YTCSentimentModel
