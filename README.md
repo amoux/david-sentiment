@@ -38,6 +38,5 @@ ytc_sentiment.train_model()
   - Tokenizer-vocab     : `<project_name>/vocab/vocab.pkl`
 
 ```python
-# project structure, config.ini
 ytc_sentiment.save_project()
 ```
