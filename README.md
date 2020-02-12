@@ -25,9 +25,6 @@ x_train, x_labels, y_test = ds.fit_batch_to_dataset(batch, config=config)
 
 - Train the model.
 
-> NOTE: You can override any model-config attribute from either YTCSentimentConfig or YTCSentimentModel. e.g.,
-`ytc_sentiment.epochs = 50`
-
 ```python
 from david_sentiment import YTCSentimentModel
 ytc_sentiment = YTCSentimentModel(config)
