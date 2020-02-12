@@ -4,6 +4,13 @@
 
 > Why? Because Twitter text-datasets are overrated, and lack ***sentimentalism***; *The excessive expression of feelings of tenderness, sadness, or nostalgia in behavior, writing, or speech.*
 
+#### TODOS
+- The following features will be added.
+
+  - multi-head attention (Transformer model)
+  - encoder/decoder masking
+  - Text generation (RNN)
+
 - Train a custom sentiment model with just a few lines of code - Making it easy to try different configurations or preprocessing techniques.
 
 ### Usage
