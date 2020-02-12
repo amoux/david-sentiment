@@ -12,17 +12,17 @@ def create_project_structure(config, clear_first=False, exist_ok=False):
     """Create root-directory, sub-directories and attach the config,
         model, vocab file paths.
 
-    `config`: Class instance of `YTSentimentConfig`.
+    `config`: Class instance of `YTCSentimentConfig`.
     `clear_first`: Whether to clear the paths in place (if any)
         before attaching the created paths.
     """
-    output_dir = Path(config.output_dir)
-    if not output_dir.exists():
-        output_dir.mkdir(exist_ok=exist_ok)
-    model_path = output_dir.joinpath("model")
+    project_dir = Path(config.project_dir)
+    if not project_dir.exists():
+        project_dir.mkdir(exist_ok=exist_ok)
+    model_path = project_dir.joinpath("model")
     if not model_path.exists():
         model_path.mkdir(exist_ok=exist_ok)
-    vocab_path = output_dir.joinpath("vocab")
+    vocab_path = project_dir.joinpath("vocab")
     if not vocab_path.exists():
         vocab_path.mkdir(exist_ok=exist_ok)
 
@@ -31,15 +31,15 @@ def create_project_structure(config, clear_first=False, exist_ok=False):
         config.model_file = "model.h5"
         config.vocab_file = "vocab.pkl"
 
-    config.output_dir = output_dir
+    config.project_dir = project_dir
     config.model_file = model_path.joinpath(config.model_file)
     config.vocab_file = vocab_path.joinpath(config.vocab_file)
-    config.config_file = output_dir.joinpath(config.config_file)
+    config.config_file = project_dir.joinpath(config.config_file)
     return config
 
 
 @dataclass
-class YTSentimentConfig:
+class YTCSentimentConfig:
     min_strlen: int = 20
     max_strlen: int = 400
     spacy_model: str = "en_core_web_sm"
@@ -50,7 +50,7 @@ class YTSentimentConfig:
     loss: str = "binary_crossentropy"
     optimizer: str = "adam"
     activation: str = "sigmoid"
-    output_dir: str = "sentiment_model"
+    project_dir: str = "sentiment_model"
     model_file: str = "model.h5"
     vocab_file: str = "vocab.pkl"
     config_file: str = "config.ini"
@@ -75,17 +75,19 @@ class YTSentimentConfig:
 
     @staticmethod
     def load_project(filename: str = None):
-        """Load an existing project from a initialization file."""
+        """Load an existing project's state from a `config.ini` file."""
         if filename is None:
-            filename = YTSentimentConfig.config_file
+            filename = YTCSentimentConfig.config_file
         kwargs = {}
         for section in INIFileConfig(filename).values():
             for arg, value in section.items():
                 kwargs[arg] = value
-        return YTSentimentConfig(**kwargs)
+        return YTCSentimentConfig(**kwargs)
 
-    def save_project_files(self, clear_filepaths=False, exist_ok=False):
-        """Save all configurations and create directories and files."""
-        self._init_project(clear_first=clear_filepaths, exist_ok=exist_ok)
+    def save_project(self, clear_paths=False, exist_ok=False):
+        """Create project's file structure and save important session
+        dependencies for both  the Tokenizer's vocabulary and Keras's Model.
+        """
+        self._init_project(clear_first=clear_paths, exist_ok=exist_ok)
         self.model.save(self.model_file)
         self.tokenizer.save_vectors(self.vocab_file)

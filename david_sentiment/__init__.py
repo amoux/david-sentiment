@@ -1,2 +1,2 @@
-from ._config import YTSentimentConfig
-from ._model import YTSentimentModel
+from ._config import YTCSentimentConfig
+from ._model import YTCSentimentModel

@@ -10,16 +10,16 @@ from keras.layers.embeddings import Embedding
 from keras.models import Sequential
 from keras.preprocessing.sequence import pad_sequences
 
-from ._config import YTSentimentConfig
+from ._config import YTCSentimentConfig
 from .utils import nearest_emoji
 
 
-class YTSentimentModel(YTSentimentConfig):
+class YTCSentimentModel(YTCSentimentConfig):
     __config_loaded_from_file = False
 
     def __init__(self, model_config=None, **kwargs):
         if model_config is not None:
-            if isinstance(model_config, YTSentimentConfig):
+            if isinstance(model_config, YTCSentimentConfig):
                 if isfile(model_config.config_file):
                     self.__config_loaded_from_file = True
                 kwargs = asdict(model_config)

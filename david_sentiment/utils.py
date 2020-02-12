@@ -45,7 +45,7 @@ loss: {loss}
 optimizer: {optimizer}
 padding: {padding}
 [Output]
-output_dir: {output_dir}
+project_dir: {project_dir}
 model_file: {model_file}
 vocab_file: {vocab_file}
 config_file: {config_file}"""

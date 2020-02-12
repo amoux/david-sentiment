@@ -12,7 +12,7 @@ from david.text import (
 from tqdm import tqdm
 from wasabi import msg
 
-_YTSentimentConfig = NewType("YTSentimentConfig", object)
+_YTSentimentConfig = NewType("YTCSentimentConfig", object)
 
 
 @dataclass
