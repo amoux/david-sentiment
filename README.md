@@ -43,6 +43,17 @@ ytc_sentiment.train_model()
 ytc_sentiment.save_project()
 ```
 
+- Loading a saved project.
+
+```python
+from david_sentiment import YTCSentimentConfig, YTCSentimentModel
+config = YTCSentimentConfig.load_project('ytc_sentiment/config.ini')
+ytc_sentiment = YTCSentimentModel(config)
+
+print(ytc_sentiment)
+'<YTCSentimentModel(max_seqlen=62, vocab_shape=(2552, 100))>'
+```
+
 ## Results
 
 - with punctuation.
