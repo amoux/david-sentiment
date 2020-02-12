@@ -1,6 +1,8 @@
 # david-sentiment (unsupervised learning)
 
-## Sentiment Embedding Model trained on YouTube Comments
+**Sentiment Embedding Models from YouTube Comments**
+
+> Why? Because Twitter text-datasets are overrated, and lack ***sentimentalism***; *The excessive expression of feelings of tenderness, sadness, or nostalgia in behavior, writing, or speech.*
 
 - Train a custom sentiment model with just a few lines of code - Making it easy to try different configurations or preprocessing techniques.
 
@@ -47,99 +49,97 @@ ytc_sentiment.save_project()
 
 ```python
 ytc_sentiment.print_predict("hello, world! i am glad this demo worked! :)")
-...
-input: "hello, world! i am glad this demo worked! :)" < pos(😍) (98.3824)% >
+  "input: hello, world! i am glad this demo worked! :) < pos(😍) (98.3824)% >"
 ```
 
 - without punctuation.
 
 ```python
 ytc_sentiment.print_predict("hello world I am glad this demo worked")
-...
-input: "hello world I am glad this demo worked" < pos(😀) (91.5674)% >
+  "input: hello world I am glad this demo worked < pos(😀) (91.5674)% >"
 ```
 
 - `Textblob` vs `YTCSentimentModel` trained on `1132` samples and `100` epochs.
 
-```markdown
-  💬 (Textblob=0.0, YTCSentimentModel=99.8896)
-    😍 - pewdiepie plz u subcribe me and make a video on me
-  
-  💬 (Textblob=0.0, YTCSentimentModel=91.9985)
-    😀 - You should make a video of you playing PUBG on this phone.
-  
-  💬 (Textblob=0.0, YTCSentimentModel=48.4672)
-    😶 - If it's supposed to be an april fools
-  
-  💬 (Textblob=0.0, YTCSentimentModel=98.5463)
-    😍 - Plz make a video on India, cost & religion system....
-  
-  💬 (Textblob=0.0, YTCSentimentModel=52.7096)
-    😑 - Plz make a video of redmi note 7 pro
-  
-  💬 (Textblob=0.0, YTCSentimentModel=31.7184)
-    😳 - Go watch it.
-  
-  💬 (Textblob=0.0, YTCSentimentModel=79.7811)
-    😁 - make a video covering each accessory please man!
-  
-  💬 (Textblob=0.0, YTCSentimentModel=95.4761)
-    🤗 - Make a video on Redmi k20 pro
-  
-  💬 (Textblob=0.0, YTCSentimentModel=86.7035)
-    😀 - It's about balance.
-  
-  💬 (Textblob=0.0, YTCSentimentModel=95.139)
-    🤗 - Would you please make a video on Funcl W1 and Funcl AI earphones.
-  
-  💬 (Textblob=0.0, YTCSentimentModel=78.5567)
-    😁 - Will you make a video on it ?
-  
-  💬 (Textblob=0.0, YTCSentimentModel=98.7835)
-    😍 - Please think about it and make a video if you can.
-  
-  💬 (Textblob=0.0, YTCSentimentModel=94.1769)
-    🤗 - we could hope to see in 2020??
-  
-  💬 (Textblob=0.0, YTCSentimentModel=98.7844)
-    😍 - Make a video about not a smartphone plzzzzzzz
-  
-  💬 (Textblob=0.0, YTCSentimentModel=96.7084)
-    🤗 - You don’t have to be a bitch.
-  
-  💬 (Textblob=0.0, YTCSentimentModel=47.5426)
-    😶 - Think about that.
-  
-  💬 (Textblob=0.0, YTCSentimentModel=98.4927)
-    😍 - can you make a video on how to make thumbnail.
-  
-  💬 (Textblob=0.0, YTCSentimentModel=1.5344)
-    🤬 - Please make a video about the vivo nex 2! 🙏
-  
-  💬 (Textblob=0.0, YTCSentimentModel=89.943)
-    😀 - Your biggest fan
-  
-  💬 (Textblob=0.0, YTCSentimentModel=97.6116)
-    😍 - Please make a video on how to use Facebook without internet.
-  
-  💬 (Textblob=0.0, YTCSentimentModel=61.0681)
-    😑 - A BIG DEAL
-  
-  💬 (Textblob=0.0, YTCSentimentModel=91.3205)
-    😀 - but I use my phone a lot for work and Netflix
-  
-  💬 (Textblob=0.0, YTCSentimentModel=40.8797)
-    😒 - so why stop.
-  
-  💬 (Textblob=0.0, YTCSentimentModel=97.6973)
-    😍 - Health, wealth and mind.
-  
-  💬 (Textblob=0.0, YTCSentimentModel=55.4884)
-    😑 - Dose
-  
-  💬 (Textblob=0.0, YTCSentimentModel=42.6375)
-    😒 - I would like to know your opinion.
-  
-  💬 (Textblob=0.0, YTCSentimentModel=26.5492)
-    😤 - Liza don’t believe those hater lovers are here for you
+```bash
+💬 (Textblob=0.0, YTCSentimentModel=99.8896)
+  😍 - pewdiepie plz u subcribe me and make a video on me
+
+💬 (Textblob=0.0, YTCSentimentModel=91.9985)
+  😀 - You should make a video of you playing PUBG on this phone.
+
+💬 (Textblob=0.0, YTCSentimentModel=48.4672)
+  😶 - If it's supposed to be an april fools
+
+💬 (Textblob=0.0, YTCSentimentModel=98.5463)
+  😍 - Plz make a video on India, cost & religion system....
+
+💬 (Textblob=0.0, YTCSentimentModel=52.7096)
+  😑 - Plz make a video of redmi note 7 pro
+
+💬 (Textblob=0.0, YTCSentimentModel=31.7184)
+  😳 - Go watch it.
+
+💬 (Textblob=0.0, YTCSentimentModel=79.7811)
+  😁 - make a video covering each accessory please man!
+
+💬 (Textblob=0.0, YTCSentimentModel=95.4761)
+  🤗 - Make a video on Redmi k20 pro
+
+💬 (Textblob=0.0, YTCSentimentModel=86.7035)
+  😀 - It's about balance.
+
+💬 (Textblob=0.0, YTCSentimentModel=95.139)
+  🤗 - Would you please make a video on Funcl W1 and Funcl AI earphones.
+
+💬 (Textblob=0.0, YTCSentimentModel=78.5567)
+  😁 - Will you make a video on it ?
+
+💬 (Textblob=0.0, YTCSentimentModel=98.7835)
+  😍 - Please think about it and make a video if you can.
+
+💬 (Textblob=0.0, YTCSentimentModel=94.1769)
+  🤗 - we could hope to see in 2020??
+
+💬 (Textblob=0.0, YTCSentimentModel=98.7844)
+  😍 - Make a video about not a smartphone plzzzzzzz
+
+💬 (Textblob=0.0, YTCSentimentModel=96.7084)
+  🤗 - You don’t have to be a bitch.
+
+💬 (Textblob=0.0, YTCSentimentModel=47.5426)
+  😶 - Think about that.
+
+💬 (Textblob=0.0, YTCSentimentModel=98.4927)
+  😍 - can you make a video on how to make thumbnail.
+
+💬 (Textblob=0.0, YTCSentimentModel=1.5344)
+  🤬 - Please make a video about the vivo nex 2! 🙏
+
+💬 (Textblob=0.0, YTCSentimentModel=89.943)
+  😀 - Your biggest fan
+
+💬 (Textblob=0.0, YTCSentimentModel=97.6116)
+  😍 - Please make a video on how to use Facebook without internet.
+
+💬 (Textblob=0.0, YTCSentimentModel=61.0681)
+  😑 - A BIG DEAL
+
+💬 (Textblob=0.0, YTCSentimentModel=91.3205)
+  😀 - but I use my phone a lot for work and Netflix
+
+💬 (Textblob=0.0, YTCSentimentModel=40.8797)
+  😒 - so why stop.
+
+💬 (Textblob=0.0, YTCSentimentModel=97.6973)
+  😍 - Health, wealth and mind.
+
+💬 (Textblob=0.0, YTCSentimentModel=55.4884)
+  😑 - Dose
+
+💬 (Textblob=0.0, YTCSentimentModel=42.6375)
+  😒 - I would like to know your opinion.
+
+💬 (Textblob=0.0, YTCSentimentModel=26.5492)
+  😤 - Liza don’t believe those hater lovers are here for you
 ```
