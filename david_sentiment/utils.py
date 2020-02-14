@@ -34,6 +34,11 @@ max_strlen: {max_strlen}
 min_strlen: {min_strlen}
 spacy_model: {spacy_model}
 [Tokenizer]
+remove_urls: {remove_urls}
+enforce_ascii: {enforce_ascii}
+reduce_length: {reduce_length}
+preserve_case: {preserve_case}
+strip_handles: {strip_handles}
 max_seqlen: {max_seqlen}
 glove_ndim: {glove_ndim}
 vocab_shape: {vocab_shape}
@@ -71,8 +76,7 @@ def test_polarity_attention_weights(model):
     model.print_predict(positive_negative.format(face["neg"]))
 
 
-def test_unseen_samples(
-        model, test_data: List[Tuple[str, float]], print_k: int):
+def test_unseen_samples(model, test_data: List[Tuple[str, float]], print_k: int):
     for y_text, y_score in random.sample(test_data, k=print_k):
         _, x_score = model.predict(y_text)
         emoji = nearest_emoji(x_score)
@@ -101,8 +105,10 @@ def INIFileConfig(filename: str, template: str = None, exist_ok=False):
             if not filename.exists():
                 write(filename)
             else:
-                raise FileExistsError(f"File {filename} exists. Set "
-                                      "exist_ok as True, to override file.")
+                raise FileExistsError(
+                    f"File {filename} exists. Set "
+                    "exist_ok as True, to override file."
+                )
         else:
             write(filename)
     else:

@@ -1,0 +1,7 @@
+numpy==1.18.1
+wasabi==0.4.0
+Keras==2.3.1
+david==0.0.1
+dataclasses==0.6
+tqdm==4.39.0
+spacy==2.2.3

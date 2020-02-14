@@ -1,12 +1,12 @@
-# david-sentiment 
+# david-sentiment
 
-**Unsupervised Learning via Meta-Learning**
+## Unsupervised Sentiment Models
 
 > Why *sentiment models from youtube comments?* - Because Twitter text-datasets are overrated, and lack ***sentimentalism***; *The excessive expression of feelings of tenderness, sadness, or nostalgia in behavior, writing, or speech.*
 
-#### TODOS
-- The following features will be added.
-  - Include more meta-learners (e.g., Textblob is used in the demo)
+## Todo
+
+- Needed features:
   - Multi-head attention (Transformer model)
   - Encoder/Decoder masking
   - Text generation (RNN)
@@ -15,42 +15,63 @@
 
 ### Usage
 
-- Create a new project.
+- Create a new project
+
+New tokenizer preprocessing features:
+
+- `enforce_ascii` : Keep only printable chars are added including emojis.
+- `remove_urls`   : Remove all urls from the vocab.
 
 ```python
 from david_sentiment import YTCSentimentConfig
-config = YTCSentimentConfig(project_dir="my_model_dir", max_strlen=500)
+config = YTCSentimentConfig(project_dir="ytc_sentiment",
+                            max_strlen=3000,
+                            epochs=100,
+                            enforce_ascii=True, # :new
+                            remove_urls=True,   # :new
+                            glove_ndim="100d",)  
 ```
 
-- Build a large dataset from batch. Fetch based on keyword pattterns or complete sentences.
+Build a dataset from database query patterns. Fetch based on keyword patterns or complete sentences.
 
 ```python
 import david_sentiment.dataset as ds
-batch = ds.BatchDB([ds.Fetch('unbox', '%make a video%'),
-                    ds.FetchMany('v1', {"%want to buy ____%", "%I want  ____%"}),])
 
-x_train, y_labels, y_test = ds.fit_batch_to_dataset(batch, config=config)
+batch = ds.BatchDB([ds.Fetch('unbox', "%make a video%"),
+                    ds.Fetch('v1', "%make a video%"),])
+
+x_train, x_labels, y_test = ds.fit_batch_to_dataset(batch, config)
 ```
 
-- Train the embedding model.
+> **NOTE**: Now it also work's for with any iterable document of strings `List[str]`
+
+```python
+from david.datasets import YTCommentsDataset
+
+train_data, _ = YTCommentsDataset.split_train_test(3000, subset=0.8)
+x_train, y_labels, y_test = ds.fit_batch_to_dataset(train_data, config=config)
+```
+
+Train the embedding model
 
 ```python
 from david_sentiment import YTCSentimentModel
+
 ytc_sentiment = YTCSentimentModel(config)
 ytc_sentiment.train_model(x_train, y_labels)
 ```
 
-- Save the project: Call `save_project()` to create the project directories which saves all the essential settings for initiating a previous state, including; the trained-model and tokenizer's vocab files:
+Save the project: Call `save_project()` to create the project directories which saves all the essential settings for initiating a previous state, including; the trained-model and tokenizers vocab files:
 
-  - config file         : `<project_name>/config.init`
-  - trained model       : `<project_name>/model/model.h5`
-  - tokenizer vocab     : `<project_name>/vocab/vocab.pkl`
+- config file         : `<project_name>/config.init`
+- trained model       : `<project_name>/model/model.h5`
+- tokenizer vocab     : `<project_name>/vocab/vocab.pkl`
 
 ```python
 ytc_sentiment.save_project()
 ```
 
-- Loading a saved project.
+Loading a saved project
 
 ```python
 from david_sentiment import YTCSentimentConfig, YTCSentimentModel
@@ -63,23 +84,23 @@ print(ytc_sentiment)
 
 ## Results
 
-- with punctuation.
+- With punctuation
 
 ```python
 ytc_sentiment.print_predict("hello, world! i am glad this demo worked! :)")
   "input: hello, world! i am glad this demo worked! :) < pos(😍) (98.3824)% >"
 ```
 
-- without punctuation.
+- Without punctuation
 
 ```python
 ytc_sentiment.print_predict("hello world I am glad this demo worked")
   "input: hello world I am glad this demo worked < pos(😀) (91.5674)% >"
 ```
 
-- `Textblob` vs `YTCSentimentModel` trained on `1132` samples and `100` epochs.
+**Textblob** vs ***YTCSentimentModel*** trained on `1132` samples and `100` epochs.
 
-```bash
+```markdown
 💬 (Textblob=0.0, YTCSentimentModel=99.8896)
   😍 - pewdiepie plz u subcribe me and make a video on me
 
@@ -88,24 +109,6 @@ ytc_sentiment.print_predict("hello world I am glad this demo worked")
 
 💬 (Textblob=0.0, YTCSentimentModel=48.4672)
   😶 - If it's supposed to be an april fools
-
-💬 (Textblob=0.0, YTCSentimentModel=98.5463)
-  😍 - Plz make a video on India, cost & religion system....
-
-💬 (Textblob=0.0, YTCSentimentModel=52.7096)
-  😑 - Plz make a video of redmi note 7 pro
-
-💬 (Textblob=0.0, YTCSentimentModel=31.7184)
-  😳 - Go watch it.
-
-💬 (Textblob=0.0, YTCSentimentModel=79.7811)
-  😁 - make a video covering each accessory please man!
-
-💬 (Textblob=0.0, YTCSentimentModel=95.4761)
-  🤗 - Make a video on Redmi k20 pro
-
-💬 (Textblob=0.0, YTCSentimentModel=86.7035)
-  😀 - It's about balance.
 
 💬 (Textblob=0.0, YTCSentimentModel=95.139)
   🤗 - Would you please make a video on Funcl W1 and Funcl AI earphones.

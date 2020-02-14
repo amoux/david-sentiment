@@ -9,8 +9,7 @@ from .utils import INI_TEMPLATE_MODEL_CONFIG, INIFileConfig
 
 
 def create_project_structure(config, clear_first=False, exist_ok=False):
-    """Create root-directory, sub-directories and attach the config,
-        model, vocab file paths.
+    """Create root-directory, sub-directories and attach the config, model, vocab file paths.
 
     `config`: Class instance of `YTCSentimentConfig`.
     `clear_first`: Whether to clear the paths in place (if any)
@@ -25,7 +24,6 @@ def create_project_structure(config, clear_first=False, exist_ok=False):
     vocab_path = project_dir.joinpath("vocab")
     if not vocab_path.exists():
         vocab_path.mkdir(exist_ok=exist_ok)
-
     if clear_first:
         config.config_file = "config.ini"
         config.model_file = "model.h5"
@@ -40,9 +38,16 @@ def create_project_structure(config, clear_first=False, exist_ok=False):
 
 @dataclass
 class YTCSentimentConfig:
+    """Main configurator for preprocessing, tokenizer and embedding model."""
+
     min_strlen: int = 20
     max_strlen: int = 400
     spacy_model: str = "en_core_web_sm"
+    remove_urls: bool = True
+    enforce_ascii: bool = True
+    reduce_length: bool = True
+    preserve_case: bool = False
+    strip_handles: bool = False
     glove_ndim: str = "100d"
     epochs: int = 100
     trainable: bool = False

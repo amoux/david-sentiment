@@ -39,18 +39,17 @@ def preprocess_texts(batch: List[str], minlen: int, maxlen: int) -> List[str]:
     texts = []
     for string in tqdm(batch, desc="Comments", unit=""):
         string = normalize_whitespace(unicode_to_ascii(string))
-        if len(string) > minlen \
-            and len(string) < maxlen \
-                and string not in texts:
+        if len(string) > minlen and len(string) < maxlen and string not in texts:
             texts.append(string)
 
-    msg.good(f"* Removed {batch_size - len(texts)} comments"
-             f"  from {batch_size}. Returning size: {len(texts)}")
+    msg.good(
+        f"* Removed {batch_size - len(texts)} comments"
+        f"  from {batch_size}. Returning size: {len(texts)}"
+    )
     return texts
 
 
-def texts_to_sentences(
-        texts: List[str], spacy_model="en_core_web_sm") -> List[str]:
+def texts_to_sentences(texts: List[str], spacy_model="en_core_web_sm") -> List[str]:
     """Transform texts to to sentences using spaCy's sentence tokenizer."""
     nlp = spacy.load(spacy_model)
     msg.warn(f"* Transforming texts to sentences with {spacy_model} model.")
@@ -68,7 +67,7 @@ def texts_to_sentences(
 
 
 def load_training_data(
-        sentences: List[str],
+    sentences: List[str],
 ) -> Tuple[List[str], List[str], List[Tuple[str, float]]]:
     """Build the training dataset and sentiment labels.
 
@@ -93,29 +92,29 @@ def load_training_data(
 def build_database_batch(db_batch: BatchDB) -> List[str]:
     """Build a batch of texts from single or/and many database queries."""
     if not isinstance(db_batch, BatchDB):
-        raise ValueError(
-            "db_batch is expected to be an instance of DatabaseBatch"
-        )
+        raise ValueError("db_batch is expected to be an instance of DatabaseBatch")
+
     batches = []
     for batch in db_batch.queries:
         if isinstance(batch, Fetch):
             db = CommentsSql(batch.db)
-            texts = [i.text for i in db.fetch_comments(batch.q)
-                     if i.text not in batches]
+            texts = [
+                i.text for i in db.fetch_comments(batch.q)
+                if i.text not in batches]
             batches.extend(texts)
 
         if isinstance(batch, FetchMany):
             db = CommentsSql(batch.db)
             for query in batch.q:
-                texts = [i.text for i in db.fetch_comments(query)
-                         if i.text not in batches]
+                texts = [
+                    i.text for i in db.fetch_comments(query)
+                    if i.text not in batches]
                 batches.extend(texts)
-
     return batches
 
 
 def fit_batch_to_dataset(
-    db_batch: BatchDB, config: _YTSentimentConfig,
+    batch: Union[BatchDB, List[str]], config: _YTSentimentConfig,
 ) -> Tuple[List[str], List[int], Tuple[str, float]]:
     """Fit a batch of query patterns and apply it to the pipeline.
 
@@ -125,8 +124,16 @@ def fit_batch_to_dataset(
     max_strlen = int(config.max_strlen)
     spacy_model = str(config.spacy_model)
 
-    batch = build_database_batch(db_batch)
+    if isinstance(batch, BatchDB):
+        batch = build_database_batch(batch)
+    elif not isinstance(batch, list):
+        raise ValueError(
+            f"Invalid batch {type(batch)}. Must be an instance"
+            "of BatchDB or an iterable strings of type: List[str]"
+        )
+
     texts = preprocess_texts(batch, minlen=min_strlen, maxlen=max_strlen)
     sents = texts_to_sentences(texts, spacy_model=spacy_model)
     x_train, x_labels, y_test = load_training_data(sents)
     return x_train, x_labels, y_test
+
