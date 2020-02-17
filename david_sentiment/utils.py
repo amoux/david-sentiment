@@ -39,6 +39,7 @@ enforce_ascii: {enforce_ascii}
 reduce_length: {reduce_length}
 preserve_case: {preserve_case}
 strip_handles: {strip_handles}
+mintoken_freq: {mintoken_freq}
 max_seqlen: {max_seqlen}
 glove_ndim: {glove_ndim}
 vocab_shape: {vocab_shape}
