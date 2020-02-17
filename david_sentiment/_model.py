@@ -39,23 +39,23 @@ class YTCSentimentModel(YTCSentimentConfig):
 
     def _build_vocabulary(self, train_data):
         self.tokenizer.fit_on_document(train_data)
-        self.tokenizer.index_vocab_to_frequency(inplace=True)
-        sequences = list(self.tokenizer.document_to_sequences(train_data))
+        self.tokenizer.vocabulary_to_frequency(self.mintoken_freq)
+        sequences = self.tokenizer.document_to_sequences(train_data)
         self.max_seqlen = largest_sequence(sequences)
         self.sequences = sequences
 
     def _compile_model(self, train_data):
         self._build_vocabulary(train_data)
         model = Sequential()
-        glove_embeddings = GloVe.fit_embeddings(
+        vocab_embeddings = GloVe.fit_embeddings(
             self.tokenizer.vocab_index, vocab_dim=self.glove_ndim
         )
-        self.vocab_shape = glove_embeddings.shape
+        self.vocab_shape = vocab_embeddings.shape
         embedding_layer = Embedding(
             self.vocab_shape[0],
             self.vocab_shape[1],
             input_length=self.max_seqlen,
-            weights=[glove_embeddings],
+            weights=[vocab_embeddings],
             trainable=self.trainable,
         )
         model.add(embedding_layer)

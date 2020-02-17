@@ -29,7 +29,7 @@ EMOJI_EMOTIONS = {
 }
 
 INI_TEMPLATE_MODEL_CONFIG = """
-[Corpus]
+[Batch]
 max_strlen: {max_strlen}
 min_strlen: {min_strlen}
 spacy_model: {spacy_model}
@@ -53,6 +53,7 @@ padding: {padding}
 project_dir: {project_dir}
 model_file: {model_file}
 vocab_file: {vocab_file}
+vectors_file: {vectors_file}
 config_file: {config_file}"""
 
 

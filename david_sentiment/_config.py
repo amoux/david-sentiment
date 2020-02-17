@@ -24,14 +24,17 @@ def create_project_structure(config, clear_first=False, exist_ok=False):
     vocab_path = project_dir.joinpath("vocab")
     if not vocab_path.exists():
         vocab_path.mkdir(exist_ok=exist_ok)
+
     if clear_first:
         config.config_file = "config.ini"
         config.model_file = "model.h5"
-        config.vocab_file = "vocab.pkl"
+        config.vocab_file = "vocab.txt"
+        config.vectors_file = "vectors.pkl"
 
     config.project_dir = project_dir
     config.model_file = model_path.joinpath(config.model_file)
     config.vocab_file = vocab_path.joinpath(config.vocab_file)
+    config.vectors_file = vocab_path.joinpath(config.vectors_file)
     config.config_file = project_dir.joinpath(config.config_file)
     return config
 
@@ -41,13 +44,14 @@ class YTCSentimentConfig:
     """Main configurator for preprocessing, tokenizer and embedding model."""
 
     min_strlen: int = 20
-    max_strlen: int = 400
+    max_strlen: int = 6000
     spacy_model: str = "en_core_web_sm"
     remove_urls: bool = True
     enforce_ascii: bool = True
     reduce_length: bool = True
     preserve_case: bool = False
     strip_handles: bool = False
+    mintoken_freq: int = 1
     glove_ndim: str = "100d"
     epochs: int = 100
     trainable: bool = False
@@ -57,7 +61,8 @@ class YTCSentimentConfig:
     activation: str = "sigmoid"
     project_dir: str = "sentiment_model"
     model_file: str = "model.h5"
-    vocab_file: str = "vocab.pkl"
+    vocab_file: str = "vocab.txt"
+    vectors_file: str = "vectors.pkl"
     config_file: str = "config.ini"
     max_seqlen: int = None
     vocab_shape: Tuple[int, int] = None
@@ -76,7 +81,7 @@ class YTCSentimentConfig:
     def _load_model_and_tokenizer(self):
         """Restore/load the model and tokenizer objects from a saved file."""
         self.model = load_model(self.model_file)
-        self.tokenizer = Tokenizer(self.vocab_file)
+        self.tokenizer = Tokenizer(self.vectors_file)
 
     @staticmethod
     def load_project(filename: str = None):
@@ -89,10 +94,12 @@ class YTCSentimentConfig:
                 kwargs[arg] = value
         return YTCSentimentConfig(**kwargs)
 
-    def save_project(self, clear_paths=False, exist_ok=False):
-        """Create project's file structure and save important session
+    def save_project(self, exist_ok=False):
+        """Create project's file structure and save important session.
+
         dependencies for both  the Tokenizer's vocabulary and Keras's Model.
         """
-        self._init_project(clear_first=clear_paths, exist_ok=exist_ok)
+        self._init_project(clear_first=exist_ok, exist_ok=exist_ok)
         self.model.save(self.model_file)
-        self.tokenizer.save_vectors(self.vocab_file)
+        self.tokenizer.save_vocabulary(self.vocab_file)
+        self.tokenizer.save_vectors(self.vectors_file)
