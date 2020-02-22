@@ -72,7 +72,7 @@ class YTCSentimentModel(YTCSentimentConfig):
     def pad_input(self, text: str) -> List[Sequence[int]]:
         embedd = self.tokenizer.convert_string_to_ids(text)
         max_seqlen = self.max_seqlen
-        if not isinstance(max_seqlen. int):
+        if not isinstance(max_seqlen, int):
             max_seqlen = int(max_seqlen)
         return pad_sequences([embedd], maxlen=max_seqlen, padding=self.padding)
 
