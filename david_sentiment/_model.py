@@ -71,7 +71,10 @@ class YTCSentimentModel(YTCSentimentConfig):
 
     def pad_input(self, text: str) -> List[Sequence[int]]:
         embedd = self.tokenizer.convert_string_to_ids(text)
-        return pad_sequences([embedd], maxlen=self.max_seqlen, padding=self.padding)
+        max_seqlen = self.max_seqlen
+        if not isinstance(max_seqlen. int):
+            max_seqlen = int(max_seqlen)
+        return pad_sequences([embedd], maxlen=max_seqlen, padding=self.padding)
 
     def predict(self, text: str, k=0.6) -> float:
         embedd_input = self.pad_input(text)
