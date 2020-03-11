@@ -1,10 +1,13 @@
 import configparser
 import random
 from pathlib import Path
-from typing import List, Tuple
+from typing import List, NewType, Tuple, Union
 
+import matplotlib.pyplot as plt
 import numpy as np
 from david.text import normalize_whitespace
+
+_SentimentModel = NewType("SentimentModel", object)
 
 # Custom dict of keys as distance measures,
 # and values are the emojis representing K
@@ -39,7 +42,7 @@ enforce_ascii: {enforce_ascii}
 reduce_length: {reduce_length}
 preserve_case: {preserve_case}
 strip_handles: {strip_handles}
-mintoken_freq: {mintoken_freq}
+min_vocab_count: {min_vocab_count}
 max_seqlen: {max_seqlen}
 glove_ndim: {glove_ndim}
 vocab_shape: {vocab_shape}
@@ -68,22 +71,93 @@ def nearest_emoji(score: float) -> str:
     return "⛔"
 
 
-def test_polarity_attention_weights(model):
+def interactive_session(sentiment: _SentimentModel, stopflag="quit") -> None:
+    """Test a trained model interactively with your inputs.
+
+    `sentiment`: class instance of a SentimentModel `predict()` is called.
+    """
+    binary = {0: "<negative>", 1: "<positive>"}
+    while True:
+        chat = "\n* sentiment stats => emoji: {}, label: {}, confidence: {}%\n"
+        input_text = input("input : ")
+        if input_text.lower() != stopflag:
+            label, score = sentiment.predict(input_text)
+            print(chat.format(nearest_emoji(score), binary[label], round(score, 2)))
+        elif input_text.lower() == stopflag:
+            break
+        else:
+            continue
+
+
+def test_polarity_distance(sentiment: _SentimentModel) -> None:
+    """Perform a simple test on words:`love` and `hate` at different positions."""
     face = {"pos": ":)", "neg": ":("}
     positive_negative = "I love this, but hate it {}"
     negative_positive = "I hate this, but love it {}"
-    model.print_predict(negative_positive.format(face["pos"]))
-    model.print_predict(positive_negative.format(face["pos"]))
-    model.print_predict(negative_positive.format(face["neg"]))
-    model.print_predict(positive_negative.format(face["neg"]))
+    sentiment.print_predict(negative_positive.format(face["pos"]))
+    sentiment.print_predict(positive_negative.format(face["pos"]))
+    sentiment.print_predict(negative_positive.format(face["neg"]))
+    sentiment.print_predict(positive_negative.format(face["neg"]))
 
 
-def test_unseen_samples(model, test_data: List[Tuple[str, float]], print_k: int):
-    for y_text, y_score in random.sample(test_data, k=print_k):
-        _, x_score = model.predict(y_text)
+def test_unseen_samples(
+    sentiment: _SentimentModel,
+    test_data: Union[List[Tuple[str, float]], List[str]],
+    k: int = 10,
+) -> None:
+    """Predict sentiment scores on a test dataset with texts with/or without scores."""
+    if isinstance(test_data, list):
+        if not isinstance(test_data[0], tuple):
+            test_data = list(zip(test_data, len(test_data) * [0.0]))
+
+    for text, y_score in random.sample(test_data, k=k):
+        label, x_score = sentiment.predict(text)
         emoji = nearest_emoji(x_score)
-        text = normalize_whitespace(y_text)
-        print(f"💬 (Old={y_score}, New={x_score})\n {emoji} - {text}\n")
+        text = normalize_whitespace(text)
+        print(f"💬 <old={y_score}, new={x_score}>\n {emoji} - {text}\n")
+
+
+def plot_losses(history, save=True, show=False, name="loss.png", dpi=300):
+    """Plot the training and validation loss."""
+    if hasattr(history, "history"):
+        history = history.history
+
+    acc = history["acc"]
+    val_acc = history["val_acc"]
+    loss = history["loss"]
+    val_loss = history["val_loss"]
+    epochs = range(1, len(acc) + 1)
+    plt.plot(epochs, loss, "bo", label="training-loss")
+    plt.plot(epochs, val_loss, "b", label="validation-loss")
+    plt.title("training and validation loss")
+    plt.xlabel("epochs")
+    plt.ylabel("loss")
+    plt.legend()
+    if save:
+        plt.savefig(name, dpi=dpi)
+    if show:
+        plt.show()
+
+
+def plot_accuracy(history, save=True, show=False, name="acc.png", dpi=300):
+    """Plot the training and validation accuracy."""
+    if hasattr(history, "history"):
+        history = history.history
+    # plot.clf()
+    acc = history["acc"]
+    val_acc = history["val_acc"]
+    epochs = range(1, len(acc) + 1)
+    plt.plot(epochs, acc, "bo", label="training-acc")
+    plt.plot(epochs, val_acc, "b", label="validation-acc")
+    plt.title("training and validation accuracy")
+    plt.xlabel("epochs")
+    plt.ylabel("accuracy")
+    plt.legend()
+    if save:
+        plt.savefig(name, dpi=dpi)
+    if show:
+        plt.show()
+    pass
 
 
 def INIFileConfig(filename: str, template: str = None, exist_ok=False):

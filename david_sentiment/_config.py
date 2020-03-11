@@ -11,7 +11,7 @@ from .utils import INI_TEMPLATE_MODEL_CONFIG, INIFileConfig
 def create_project_structure(config, clear_first=False, exist_ok=False):
     """Create root-directory, sub-directories and attach the config, model, vocab file paths.
 
-    `config`: Class instance of `YTCSentimentConfig`.
+    `config`: Class instance of `SentimentConfig`.
     `clear_first`: Whether to clear the paths in place (if any)
         before attaching the created paths.
     """
@@ -40,7 +40,7 @@ def create_project_structure(config, clear_first=False, exist_ok=False):
 
 
 @dataclass
-class YTCSentimentConfig:
+class SentimentConfig:
     """Main configurator for preprocessing, tokenizer and embedding model."""
 
     min_strlen: int = 20
@@ -51,9 +51,9 @@ class YTCSentimentConfig:
     reduce_length: bool = True
     preserve_case: bool = False
     strip_handles: bool = False
-    mintoken_freq: int = 1
+    min_vocab_count: int = 1
     glove_ndim: str = "100d"
-    epochs: int = 100
+    epochs: int = 45
     trainable: bool = False
     padding: str = "post"
     loss: str = "binary_crossentropy"
@@ -87,12 +87,12 @@ class YTCSentimentConfig:
     def load_project(filename: str = None):
         """Load an existing project's state from a `config.ini` file."""
         if filename is None:
-            filename = YTCSentimentConfig.config_file
+            filename = SentimentConfig.config_file
         kwargs = {}
         for section in INIFileConfig(filename).values():
             for arg, value in section.items():
                 kwargs[arg] = value
-        return YTCSentimentConfig(**kwargs)
+        return SentimentConfig(**kwargs)
 
     def save_project(self, exist_ok=False):
         """Create project's file structure and save important session.

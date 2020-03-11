@@ -1,13 +1,13 @@
 import david_sentiment.dataset as ds
-from david_sentiment import YTCSentimentConfig, YTCSentimentModel
+from david_sentiment import SentimentConfig, SentimentModel
 from david_sentiment.utils import (test_polarity_attention_weights,
                                    test_unseen_samples)
 
-config = YTCSentimentConfig(
+config = SentimentConfig(
     project_dir="model-001",
     min_strlen=20,
     max_strlen=10000,
-    mintoken_freq=1,
+    min_vocab_count=1,
     reduce_length=True,
     remove_urls=True,
 )
@@ -20,8 +20,8 @@ batch = ds.BatchDB(
     ]
 )
 
-x_texts, x_labels, y_tests = ds.fit_batch_to_dataset(batch, config)
-ytc_sentiment = YTCSentimentModel(config)
+x_texts, x_labels, y_tests = ds.build_dataset(batch, config)
+ytc_sentiment = SentimentModel(config)
 ytc_sentiment.train_model(x_texts, x_labels)
 
 

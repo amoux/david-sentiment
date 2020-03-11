@@ -1,2 +1,2 @@
-from ._config import YTCSentimentConfig
-from ._model import YTCSentimentModel
+from ._config import SentimentConfig
+from ._model import SentimentModel
