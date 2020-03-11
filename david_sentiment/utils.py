@@ -5,7 +5,7 @@ from typing import List, NewType, Tuple, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
-from david.text import normalize_whitespace
+from david.text import normalize_whitespace, remove_punctuation
 
 _SentimentModel = NewType("SentimentModel", object)
 
@@ -69,52 +69,6 @@ def nearest_emoji(score: float) -> str:
     if emoji_index:
         return EMOJI_EMOTIONS[emoji_index]
     return "⛔"
-
-
-def interactive_session(sentiment: _SentimentModel, stopflag="quit") -> None:
-    """Test a trained model interactively with your inputs.
-
-    `sentiment`: class instance of a SentimentModel `predict()` is called.
-    """
-    binary = {0: "<negative>", 1: "<positive>"}
-    while True:
-        chat = "\n* sentiment stats => emoji: {}, label: {}, confidence: {}%\n"
-        input_text = input("input : ")
-        if input_text.lower() != stopflag:
-            label, score = sentiment.predict(input_text)
-            print(chat.format(nearest_emoji(score), binary[label], round(score, 2)))
-        elif input_text.lower() == stopflag:
-            break
-        else:
-            continue
-
-
-def test_polarity_distance(sentiment: _SentimentModel) -> None:
-    """Perform a simple test on words:`love` and `hate` at different positions."""
-    face = {"pos": ":)", "neg": ":("}
-    positive_negative = "I love this, but hate it {}"
-    negative_positive = "I hate this, but love it {}"
-    sentiment.print_predict(negative_positive.format(face["pos"]))
-    sentiment.print_predict(positive_negative.format(face["pos"]))
-    sentiment.print_predict(negative_positive.format(face["neg"]))
-    sentiment.print_predict(positive_negative.format(face["neg"]))
-
-
-def test_unseen_samples(
-    sentiment: _SentimentModel,
-    test_data: Union[List[Tuple[str, float]], List[str]],
-    k: int = 10,
-) -> None:
-    """Predict sentiment scores on a test dataset with texts with/or without scores."""
-    if isinstance(test_data, list):
-        if not isinstance(test_data[0], tuple):
-            test_data = list(zip(test_data, len(test_data) * [0.0]))
-
-    for text, y_score in random.sample(test_data, k=k):
-        label, x_score = sentiment.predict(text)
-        emoji = nearest_emoji(x_score)
-        text = normalize_whitespace(text)
-        print(f"💬 <old={y_score}, new={x_score}>\n {emoji} - {text}\n")
 
 
 def plot_losses(history, save=True, show=False, name="loss.png", dpi=300):
@@ -197,3 +151,73 @@ def INIFileConfig(filename: str, template: str = None, exist_ok=False):
             for arg, value in config.items(section):
                 template_lines[section][arg] = value
         return template_lines
+
+
+def interactive_session(sentiment: _SentimentModel, stopflag="quit") -> None:
+    """Test a trained model interactively with your inputs.
+
+    `sentiment`: class instance of a SentimentModel `predict()` is called.
+    """
+    binary = {0: "<negative>", 1: "<positive>"}
+    while True:
+        chat = "\n* sentiment stats => emoji: {}, label: {}, confidence: {}%\n"
+        input_text = input("input : ")
+        if input_text.lower() != stopflag:
+            label, score = sentiment.predict(input_text)
+            print(chat.format(nearest_emoji(score), binary[label], round(score, 2)))
+        elif input_text.lower() == stopflag:
+            break
+        else:
+            continue
+
+
+def test_unseen_samples(
+    sentiment: _SentimentModel,
+    test_data: Union[List[Tuple[str, float]], List[str]],
+    k: int = 10,
+) -> None:
+    """Predict sentiment scores on a test dataset with texts with/or without scores."""
+    if isinstance(test_data, list):
+        if not isinstance(test_data[0], tuple):
+            test_data = list(zip(test_data, len(test_data) * [0.0]))
+
+    for text, y_score in random.sample(test_data, k=k):
+        label, x_score = sentiment.predict(text)
+        emoji = nearest_emoji(x_score)
+        text = normalize_whitespace(text)
+        print(f"💬 <old={y_score}, new={x_score}>\n {emoji} - {text}\n")
+
+
+def test_polarity_distance(sentiment: _SentimentModel) -> None:
+    """Perform a simple test on words:`love` and `hate` at different positions."""
+    face = {"pos": ":)", "neg": ":("}
+    emoji = {"pos": "😍", "neg": "😡"}
+    textA = "I love this, but hate it"
+    textB = "I hate this, but love it"
+    textC = normalize_whitespace(remove_punctuation(textA))
+    textD = normalize_whitespace(remove_punctuation(textB))
+    print("* -- sentiment with punctuation -- *\n")
+    sentiment.print_predict("{} {}".format(textB, face["pos"]))
+    sentiment.print_predict("{} {}".format(textA, face["pos"]))
+    sentiment.print_predict("{} {}".format(textB, face["neg"]))
+    sentiment.print_predict("{} {}".format(textA, face["neg"]))
+    print("\n* -- sentiment without punctuation -- *\n")
+    sentiment.print_predict("{} {}".format(textD, face["pos"]))
+    sentiment.print_predict("{} {}".format(textC, face["pos"]))
+    sentiment.print_predict("{} {}".format(textD, face["neg"]))
+    sentiment.print_predict("{} {}".format(textC, face["neg"]))
+    print("\n* -- sentiment without emoticons -- *\n")
+    sentiment.print_predict("{}".format(textD))
+    sentiment.print_predict("{}".format(textC))
+    sentiment.print_predict("{}".format(textD))
+    sentiment.print_predict("{}".format(textC))
+    print("\n* -- sentiment with emoji's -- *\n")
+    sentiment.print_predict("{} {}".format(textB, emoji["pos"]))
+    sentiment.print_predict("{} {}".format(textA, emoji["pos"]))
+    sentiment.print_predict("{} {}".format(textB, emoji["neg"]))
+    sentiment.print_predict("{} {}".format(textA, emoji["neg"]))
+    print("\n* -- sentiment with emoji's & no punctuation -- *\n")
+    sentiment.print_predict("{} {}".format(textD, emoji["pos"]))
+    sentiment.print_predict("{} {}".format(textC, emoji["pos"]))
+    sentiment.print_predict("{} {}".format(textD, emoji["neg"]))
+    sentiment.print_predict("{} {}".format(textC, emoji["neg"]))

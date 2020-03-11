@@ -91,9 +91,9 @@ class SentimentModel(SentimentConfig):
             model.add(Flatten())
             model.add(Dense(32, activation="relu"))
             model.add(Dense(1, activation="sigmoid"))
-            model.compile(
-                optimizer="rmsprop", loss="binary_crossentropy", metrics=["acc"]
-            )
+            model.compile(optimizer="rmsprop",
+                          loss="binary_crossentropy",
+                          metrics=["acc"])
             return model
 
         def adhoc(model, layer):
@@ -102,9 +102,9 @@ class SentimentModel(SentimentConfig):
             model.add(Flatten())
             model.add(Dense(32, activation="relu"))
             model.add(Dense(1, activation="sigmoid"))
-            model.compile(
-                optimizer="rmsprop", loss="binary_crossentropy", metrics=["acc"]
-            )
+            model.compile(optimizer="rmsprop",
+                          loss="binary_crossentropy",
+                          metrics=["acc"])
             return model
 
         if task == "pre-trained":
@@ -187,14 +187,11 @@ class SentimentModel(SentimentConfig):
 
         x1, y1, x2, y2 = self.transform(x, y, segment, split_ratio)
         self.compile_network()
-        self.model.fit(
-            x1,
-            y1,
-            epochs=epochs,
-            batch_size=batch_size,
-            verbose=1,
-            validation_data=(x2, y2),
-        )
+        self.model.fit(x1, y1,
+                       epochs=epochs,
+                       batch_size=batch_size,
+                       verbose=1,
+                       validation_data=(x2, y2),)
 
     def _validate(self, x_val: List[str], y_val: List[int]):
         # this should be in the train method. With a parameter to choice

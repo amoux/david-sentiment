@@ -79,9 +79,8 @@ def segment_binary_dataset(data: Union[_Tx, _Ts], unpack=False):
             data = list(zip(x, y))
 
     isinteger = isinstance(data[0][1], int)
-    assert (
-        isinteger == 0 or isinteger == 1
-    ), "Integer items should be 1 or 0, got {}".format(data[0][1])
+    assert isinteger == 0 or isinteger == 1,(
+        "Integer items should be 1 or 0, got {}".format(data[0][1]))
 
     def segment(x: Any, z: int, o: int) -> Iterable[Any]:
         return x[round(z - o) :] if z > o else x[: round(z - o)]
@@ -118,6 +117,7 @@ def _meta_learner(sequence: str, preprocessor=None, learner=None) -> float:
         sentiment = learner(sequence)
         if hasattr(sentiment, "sentiment"):
             sentiment = sentiment.sentiment
+
     return sentiment
 
 
@@ -147,8 +147,6 @@ def textblob_meta_learner(document: List[str], return_untrainable=False):
     for text in document:
         sentiment = annotator(text)
         polarity = sentiment.polarity
-        # subjectivity = sentiment.subjectivity
-        # append all neutral scores to not trainable:
         if polarity == 0.0:
             untrainable.append((text, polarity))
         else:
