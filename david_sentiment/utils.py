@@ -188,36 +188,46 @@ def test_unseen_samples(
         print(f"💬 <old={y_score}, new={x_score}>\n {emoji} - {text}\n")
 
 
-def test_polarity_distance(sentiment: _SentimentModel) -> None:
-    """Perform a simple test on words:`love` and `hate` at different positions."""
+def test_polarity_distance(sentiment: _SentimentModel, ntest=1) -> None:
+    """Perform a simple test on words:`love` and `hate` at different positions.
+
+    `ntest`: Up-to five different tests `ntest=5` prints all tests.
+    """
     face = {"pos": ":)", "neg": ":("}
     emoji = {"pos": "😍", "neg": "😡"}
     textA = "I love this, but hate it"
     textB = "I hate this, but love it"
     textC = normalize_whitespace(remove_punctuation(textA))
     textD = normalize_whitespace(remove_punctuation(textB))
-    print("* -- sentiment with punctuation -- *\n")
-    sentiment.print_predict("{} {}".format(textB, face["pos"]))
-    sentiment.print_predict("{} {}".format(textA, face["pos"]))
-    sentiment.print_predict("{} {}".format(textB, face["neg"]))
-    sentiment.print_predict("{} {}".format(textA, face["neg"]))
-    print("\n* -- sentiment without punctuation -- *\n")
-    sentiment.print_predict("{} {}".format(textD, face["pos"]))
-    sentiment.print_predict("{} {}".format(textC, face["pos"]))
-    sentiment.print_predict("{} {}".format(textD, face["neg"]))
-    sentiment.print_predict("{} {}".format(textC, face["neg"]))
-    print("\n* -- sentiment without emoticons -- *\n")
-    sentiment.print_predict("{}".format(textD))
-    sentiment.print_predict("{}".format(textC))
-    sentiment.print_predict("{}".format(textD))
-    sentiment.print_predict("{}".format(textC))
-    print("\n* -- sentiment with emoji's -- *\n")
-    sentiment.print_predict("{} {}".format(textB, emoji["pos"]))
-    sentiment.print_predict("{} {}".format(textA, emoji["pos"]))
-    sentiment.print_predict("{} {}".format(textB, emoji["neg"]))
-    sentiment.print_predict("{} {}".format(textA, emoji["neg"]))
-    print("\n* -- sentiment with emoji's & no punctuation -- *\n")
-    sentiment.print_predict("{} {}".format(textD, emoji["pos"]))
-    sentiment.print_predict("{} {}".format(textC, emoji["pos"]))
-    sentiment.print_predict("{} {}".format(textD, emoji["neg"]))
-    sentiment.print_predict("{} {}".format(textC, emoji["neg"]))
+    # alway print some result for the friendly user.
+    ntest = (5 or 1) if (ntest < 1 or ntest > 5) else ntest
+    if ntest >= 1:
+        print("* -- sentiment with punctuation -- *\n")
+        sentiment.print_predict("{} {}".format(textB, face["pos"]))
+        sentiment.print_predict("{} {}".format(textA, face["pos"]))
+        sentiment.print_predict("{} {}".format(textB, face["neg"]))
+        sentiment.print_predict("{} {}".format(textA, face["neg"]))
+    if ntest >= 2:
+        print("\n* -- sentiment without punctuation -- *\n")
+        sentiment.print_predict("{} {}".format(textD, face["pos"]))
+        sentiment.print_predict("{} {}".format(textC, face["pos"]))
+        sentiment.print_predict("{} {}".format(textD, face["neg"]))
+        sentiment.print_predict("{} {}".format(textC, face["neg"]))
+    if ntest >= 3:
+        print("\n* -- sentiment without emoticons -- *\n")
+        sentiment.print_predict("{}".format(textD))
+        sentiment.print_predict("{}".format(textC))
+        sentiment.print_predict("{}".format(textD))
+        sentiment.print_predict("{}".format(textC))
+    if ntest >= 4:
+        print("\n* -- sentiment with emoji's -- *\n")
+        sentiment.print_predict("{} {}".format(textB, emoji["pos"]))
+        sentiment.print_predict("{} {}".format(textA, emoji["pos"]))
+        sentiment.print_predict("{} {}".format(textB, emoji["neg"]))
+        sentiment.print_predict("{} {}".format(textA, emoji["neg"]))
+    if ntest >= 5:
+        print("\n* -- sentiment with emoji's & no punctuation -- *\n")
+        sentiment.print_predict("{} {}".format(textD, emoji["pos"]))
+        sentiment.print_predict("{} {}".format(textC, emoji["pos"]))
+        sentiment.print_predict("{} {}".format(textD, emoji["neg"]))
+        sentiment.print_predict("{} {}".format(textC, emoji["neg"]))

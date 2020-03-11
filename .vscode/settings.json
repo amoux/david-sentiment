@@ -1,3 +1,8 @@
 {
-    "python.pythonPath": "/home/ego/anaconda3/envs/david37/bin/python"
+    "python.pythonPath": "/home/ego/anaconda3/envs/david37/bin/python",
+    "python.linting.pydocstyleEnabled": false,
+    "python.linting.pylintEnabled": false,
+    "python.linting.enabled": false,
+    "python.linting.pycodestyleEnabled": false,
+    "python.linting.mypyEnabled": true
 }

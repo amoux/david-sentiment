@@ -24,42 +24,163 @@ New tokenizer preprocessing features:
 
 ```python
 from david_sentiment import SentimentConfig
-config = SentimentConfig(project_dir="ytc_sentiment",
-                            max_strlen=3000,
-                            epochs=100,
-                            enforce_ascii=True, # :new
-                            remove_urls=True,   # :new
-                            glove_ndim="100d",)  
+
+# you can define everything upfront or as you go.
+config = SentimentConfig(project_dir="my-model",
+                         max_strlen=3000,
+                         epochs=10,
+                         enforce_ascii=True,
+                         remove_urls=True,
+                         glove_ndim="100d",)  
 ```
 
-Build a dataset from database query patterns. Fetch based on keyword patterns or complete sentences.
+Build a dataset from database queries:
 
 ```python
 import david_sentiment.dataset as ds
 
 batch = ds.BatchDB([ds.Fetch('unbox', "%make a video%"),
                     ds.Fetch('v1', "%make a video%"),])
-
-x_train, x_labels, y_test = ds.build_dataset(batch, config)
+trainable = ds.build_dataset(batch, config, untrainable=False) # default
 ```
 
-> **NOTE**: Now it also work's for with any iterable document of strings `List[str]`
+- The `build_dataset()` method works for any iterable of strings.
+  - A `trainable` is simply a document annotated by the meta learner (In this case TextBlob).
+
+> At the moment only binary classification datasets are compatible with the full pipeline. But I am planning  to implement multi-categorical features for the same semantic tasks.
 
 ```python
-from david.datasets import YTCommentsDataset
+from david_sentiment.dataset import YTComments
+from david_sentiment.dataset import build_dataset
 
-train_data, _ = YTCommentsDataset.split_train_test(3000, subset=0.8)
-x_train, y_labels, y_test = ds.build_dataset(train_data, config=config)
+dataset = YTComments.load_dataset_as_doc() # returns a generator
+trainable, untrainable = build_dataset(dataset, config, untrainable=True)
 ```
 
-Train the embedding model
+- A document goes through a carefully designed pipeline; It is important for you to know what is going on in the background. So if you want to inspect why your documents where `Untrainable` - you can simple ask the method to return it. Here's the output and information after executing the `build_dataset()` method.
+
+```bash
+...
+⚠ * Found batch with 61478 samples...
+Batch: 100%|██████████| 61478/61478 [00:56<00:00, 1086.96/s]
+
+ℹ * Removed 0 items from 61478.
+✔ * Returning 61478 samples.
+⚠ * Transforming texts to sentences with en_core_web_sm model.
+✔ * Done! Successfully preprocessed 210034 sentences.
+ℹ * Size before: 61478, and after: 210034.
+⚠ * TextBlob annotating texts as binary [0|1] int labels.
+✔ * <Annotator> Trainable: ( 88904 ), Untrainable: ( 121130 ).
+```
+
+You can train the model with one line - or `step-by-step` **(see below)**
 
 ```python
 from david_sentiment import SentimentModel
 
-ytc_sentiment = SentimentModel(config)
-ytc_sentiment.train_model(x_train, y_labels)
+sentiment = SentimentModel(config)
+sentiment.train(trainable) # List[Tuple[List[str, int]]]
 ```
+
+## Working with the model step-by-step (made easy)
+
+The `SentimentModel` class holds all the essential properties of your dataset, like your vocabulary and all common attributes required for building, batching, compiling etc so you can focus on building, training, and experimenting.
+
+- Also, why do we need a class for passing objects around?
+  - Instead of passing a bunch of globals all over, you can keep everything in one place. Your workspace stays tidy so you can focus on training and building the model and not managing or trying to locate all those global variables.
+
+- I have a lot of documents?
+  - If you have over 5000K samples, I recommend dropping tokens with a frequency of 2 or more (but it depends on your dataset).
+
+```python
+# What if you already mande an instance of the SentimentModel class?
+# There's no need to pass the config object around! You can simply clone
+# the instance cleanly with one step (you can do this as many times you want).
+sentiment = SentimentModel.clone(sentiment)
+
+# You can also add existing models and or any models you make later like this:
+# this a clean hack to work with the same state and let you experiment with many
+# models without running into collisions if you where to use the same instance.
+sentiment = SentimentModel.clone(sentiment, model)
+
+# finally, transform the trainable document and its binary labels
+# to the format the model expects (segment=True fits the document to 1:1 ratio)
+# 1:1 meaning 50% 50% distribution on the [0, 1] binary classes (important!)
+x_train, y_train, x_test, y_test = sentiment.transform(trainable,
+                                                       segment=True,
+                                                       split_ratio=0.2,
+                                                       mincount=2)
+```
+
+Getting the embedding layer for the model. `[50d, 100d, 200d, 300d]` available.
+
+```python
+embedding_layer = sentiment.embedding(l2=1e-6, ndim="200d")
+...
+✔ '<✔(dim=200, vocab=14108)>'
+✔ '*** embedding vocabulary 👻 ***'
+✔ 'Glove embeddings loaded from path:'
+'/home/<usr>/david_models/glove/glove.6B/glove.6B.200d.txt'
+```
+
+```python
+model = sentiment.compile_network(None, embedding_layer, return_model=True)
+model.summary()
+...
+Model: "sequential_1"
+_________________________________________________________________
+Layer (type)                 Output Shape              Param #   
+=================================================================
+embedding (Embedding)        (None, 166, 200)          2821600   
+_________________________________________________________________
+flatten_1 (Flatten)          (None, 33200)             0         
+_________________________________________________________________
+dense_1 (Dense)              (None, 32)                1062432   
+_________________________________________________________________
+dense_2 (Dense)              (None, 1)                 33        
+=================================================================
+Total params: 3,884,065
+Trainable params: 1,062,465
+Non-trainable params: 2,821,600
+_________________________________________________________________
+```
+
+- And finally train your model!
+
+```python
+history = model.fit(x_train, y_train,
+                    epochs=20,
+                    batch_size=512,
+                    validation_data=(x_test, y_test))
+...
+```
+
+```bash
+Train on 45024 samples, validate on 11256 samples
+Epoch 1/20
+45024/45024 [==============================] - 11s 238us/step - loss: 0.5948 - acc: 0.6801 - val_loss: 0.5180 - val_acc: 0.7433
+Epoch 2/20
+45024/45024 [==============================] - 10s 214us/step - loss: 0.4958 - acc: 0.7521 - val_loss: 0.5457 - val_acc: 0.7224
+...
+Epoch 20/20
+45024/45024 [==============================] - 11s 239us/step - loss: 0.1185 - acc: 0.9626 - val_loss: 0.6788 - val_acc: 0.7615
+```
+
+## Plotting
+
+```python
+from david_sentiment.utils import plot_accuracy, plot_losses
+
+plot_losses(history, show=True, save=False)
+```
+
+<img src="src/loss.png" />
+
+```python
+plot_accuracy(history, show=True, save=False)
+```
+
+<img src="src/acc.png" />
 
 Save the project: Call `save_project()` to create the project directories which saves all the essential settings for initiating a previous state, including; the trained-model and tokenizers vocab files:
 

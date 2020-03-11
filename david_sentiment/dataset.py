@@ -48,7 +48,7 @@ def fetch_queries(db_batch: BatchDB) -> List[str]:
     if not isinstance(db_batch, BatchDB):
         raise ValueError("db_batch is expected to be an instance of DatabaseBatch")
 
-    batches = []
+    batches: List[str] = []
     for batch in db_batch.queries:
         if isinstance(batch, Fetch):
             db = CommentsSql(batch.db)
@@ -79,7 +79,7 @@ def segment_binary_dataset(data: Union[_Tx, _Ts], unpack=False):
             data = list(zip(x, y))
 
     isinteger = isinstance(data[0][1], int)
-    assert isinteger == 0 or isinteger == 1,(
+    assert isinteger == 0 or isinteger == 1, (
         "Integer items should be 1 or 0, got {}".format(data[0][1]))
 
     def segment(x: Any, z: int, o: int) -> Iterable[Any]:
@@ -167,7 +167,7 @@ def batch_to_texts(batch: List[str], minlen: int, maxlen: int) -> List[str]:
     batch_size = len(batch)
     msg.warn(f"* Found batch with {batch_size} samples...")
 
-    texts = []
+    texts: List[str] = []
     for seq in tqdm(batch, desc="Batch", unit=""):
         seq = preprocess_string(seq)
         if len(seq) > minlen and len(seq) < maxlen and seq not in texts:
