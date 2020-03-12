@@ -117,8 +117,8 @@ Getting the embedding layer for the model. `[50d, 100d, 200d, 300d]` available.
 ```python
 embedding_layer = sentiment.embedding(l2=1e-6, ndim="200d")
 ...
-✔ '<✔(dim=200, vocab=14108)>'
-✔ '*** embedding vocabulary 👻 ***'
+✔ '<(dim=200, vocab=14108)>'
+✔ 'embedding vocabulary 👻'
 ✔ 'Glove embeddings loaded from path:'
 '/home/<usr>/david_models/glove/glove.6B/glove.6B.200d.txt'
 ```
@@ -126,6 +126,9 @@ embedding_layer = sentiment.embedding(l2=1e-6, ndim="200d")
 ```python
 model = sentiment.compile_network(None, embedding_layer, return_model=True)
 model.summary()
+```
+
+```bash
 ...
 Model: "sequential_1"
 _________________________________________________________________
@@ -221,23 +224,29 @@ input: < pos(😶) (50.6473)% >
 ```python
 sentiment.print_predict("idk how i feel anymore.")
 ...
-< neg(😬) (36.1655)% >
+input: < neg(😬) (36.1655)% >
 ```
 
 **Textblob** vs ***SentimentModel*** trained on `1132` samples and `100` epochs.
 
 ```markdown
-💬 <old=0.0, new=66.1303, label=1>
- 😊 - then I recorded my gameplay and posted it on YouTube
+💬 <old=0.0, new=96.3195, label=1>
+ 🤗 - I'm Japanese student , and I think this video is valuable to study how to use python.
 
+💬 <old=0.0, new=45.5757, label=0>
+ 😒 - But I'm also trying to keep up with my fitness.
+
+💬 <old=0.0, new=48.2212, label=0>
+ 😶 - I'll see what I can do
+ 
 💬 <old=0.0, new=92.5349, label=1>
  🤗 - You are actually make me realize the importance of focus on Myself instead of criticizing others.
 
-💬 <old=0.0, new=98.9677, label=1>
- 😍 - , I lost my job, I was feeling so blue and
-
 💬 <old=0.0, new=87.7247, label=1>
  😀 - You just want some likes.
+ 
+ 💬 <old=0.0, new=26.2294, label=0>
+ 😤 - Have ever thought that the rings for the warnings are to notify us if we forget
 
 💬 <old=0.0, new=6.0083, label=0>
  🤬 - “...50 lbs of 💩 in a 5 lb bag!”
@@ -251,11 +260,14 @@ sentiment.print_predict("idk how i feel anymore.")
 💬 <old=0.0, new=72.4068, label=1>
  😊 - but how i improve myself like python develper.
 
-💬 <old=0.0, new=65.479, label=1>
- 😊 - 10 april tak kya nhi aa
-
 💬 <old=0.0, new=99.0795, label=1>
  😍 - and I think I need to master reading to master the meditation
+ 
+ 💬 <old=0.0, new=8.3481, label=0>
+ 😡 - Windows also has issues with Python versions above 3.4 so try to get 3.4.
+ 
+ 💬 <old=0.0, new=18.5559, label=0>
+ 😠 - only me with this problem???
 ```
 
 ## Saving/Loading
