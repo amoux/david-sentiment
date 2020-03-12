@@ -27,11 +27,12 @@ from david_sentiment import SentimentConfig
 
 # you can define everything upfront or as you go.
 config = SentimentConfig(project_dir="my-model",
-                         max_strlen=3000,
-                         epochs=10,
+                         max_strlen=1000,
+                         min_strlen=20,
+                         epochs=13,
                          enforce_ascii=True,
                          remove_urls=True,
-                         glove_ndim="100d",)  
+                         glove_ndim="300d",)  
 ```
 
 Build a dataset from database queries:
@@ -61,16 +62,17 @@ trainable, untrainable = build_dataset(dataset, config, untrainable=True)
 
 ```bash
 ...
-⚠ * Found batch with 61478 samples...
-Batch: 100%|██████████| 61478/61478 [00:56<00:00, 1086.96/s]
+⚠  normalizing 61478 string sequences from batch.
+sequences: 100%|██████████| 61478/61478 [00:54<00:00, 1130.32/s]
 
-ℹ * Removed 0 items from 61478.
-✔ * Returning 61478 samples.
-⚠ * Transforming texts to sentences with en_core_web_sm model.
-✔ * Done! Successfully preprocessed 210034 sentences.
-ℹ * Size before: 61478, and after: 210034.
-⚠ * TextBlob annotating texts as binary [0|1] int labels.
-✔ * <Annotator> Trainable: ( 88904 ), Untrainable: ( 121130 ).
+✔  removed 594 strings of length >= 1000.
+ℹ  returning batch with 60884 samples.
+⚠  tokenizing strings to sentences, spaCy model: en_core_web_sm.
+✔  removed 51264 strings of length <= 20.
+ℹ  previous-size: 60884, new-size: 142342.
+⚠  TextBlob annotating dataset with binary classes: 0 | 1
+✔  annotation summary 🤖
+ℹ  trainable: 73356, un-trainable: 68986
 ```
 
 You can train the model with one line - or `step-by-step` **(see below)**
@@ -106,21 +108,22 @@ sentiment = SentimentModel.clone(sentiment, model)
 # finally, transform the trainable document and its binary labels
 # to the format the model expects (segment=True fits the document to 1:1 ratio)
 # 1:1 meaning 50% 50% distribution on the [0, 1] binary classes (important!)
-x_train, y_train, x_test, y_test = sentiment.transform(trainable,
-                                                       segment=True,
-                                                       split_ratio=0.2,
-                                                       mincount=2)
+x_train, y_train, x_test, y_test = sentiment.transform(trainable, mincount=2)
+len(x_train), len(x_test) 
+...
+'ℹ * Removed 13802 tokens from 26948'
+(37744, 9436)
 ```
 
 Getting the embedding layer for the model. `[50d, 100d, 200d, 300d]` available.
 
 ```python
-embedding_layer = sentiment.embedding(l2=1e-6, ndim="200d")
+embedding_layer = sentiment.embedding(l2=1e-6, ndim="300d")
 ...
-✔ '<(dim=200, vocab=14108)>'
+✔ '<(dim=300, vocab=13147)>'
 ✔ 'embedding vocabulary 👻'
 ✔ 'Glove embeddings loaded from path:'
-'/home/<usr>/david_models/glove/glove.6B/glove.6B.200d.txt'
+'/home/<usr>/david_models/glove/glove.6B/glove.6B.300d.txt'
 ```
 
 ```python
@@ -134,17 +137,17 @@ Model: "sequential_1"
 _________________________________________________________________
 Layer (type)                 Output Shape              Param #   
 =================================================================
-embedding (Embedding)        (None, 166, 200)          2821600   
+embedding (Embedding)        (None, 125, 300)          3944100   
 _________________________________________________________________
-flatten_1 (Flatten)          (None, 33200)             0         
+flatten_1 (Flatten)          (None, 37500)             0         
 _________________________________________________________________
-dense_1 (Dense)              (None, 32)                1062432   
+dense_1 (Dense)              (None, 32)                1200032   
 _________________________________________________________________
 dense_2 (Dense)              (None, 1)                 33        
 =================================================================
-Total params: 3,884,065
-Trainable params: 1,062,465
-Non-trainable params: 2,821,600
+Total params: 5,144,165
+Trainable params: 1,200,065
+Non-trainable params: 3,944,100
 _________________________________________________________________
 ```
 
@@ -152,21 +155,21 @@ _________________________________________________________________
 
 ```python
 history = model.fit(x_train, y_train,
-                    epochs=20,
+                    epochs=13,
                     batch_size=512,
                     validation_data=(x_test, y_test))
 ...
 ```
 
 ```bash
-Train on 45024 samples, validate on 11256 samples
-Epoch 1/20
-45024/45024 [==============================] - 11s 238us/step - loss: 0.5948 - acc: 0.6801 - val_loss: 0.5180 - val_acc: 0.7433
-Epoch 2/20
-45024/45024 [==============================] - 10s 214us/step - loss: 0.4958 - acc: 0.7521 - val_loss: 0.5457 - val_acc: 0.7224
+Train on 37744 samples, validate on 9436 samples
+Epoch 1/13
+37744/37744 [==============================] - 9s 249us/step - loss: 0.6003 - acc: 0.6701 - val_loss: 0.5387 - val_acc: 0.7174
+Epoch 2/13
+37744/37744 [==============================] - 9s 241us/step - loss: 0.4914 - acc: 0.7583 - val_loss: 0.5187 - val_acc: 0.7364
 ...
-Epoch 20/20
-45024/45024 [==============================] - 11s 239us/step - loss: 0.1185 - acc: 0.9626 - val_loss: 0.6788 - val_acc: 0.7615
+Epoch 13/13
+37744/37744 [==============================] - 9s 249us/step - loss: 0.1589 - acc: 0.9447 - val_loss: 0.6189 - val_acc: 0.7568
 ```
 
 ## Plotting
@@ -227,7 +230,12 @@ sentiment.print_predict("idk how i feel anymore.")
 input: < neg(😬) (36.1655)% >
 ```
 
-**Textblob** vs ***SentimentModel*** trained on `1132` samples and `100` epochs.
+```python
+from david_sentiment.utils import test_unseen_samples
+
+# try running predictions on the un-trainable dataset (shuffled)
+test_unseen_samples(sentiment, untrainable, k=13)
+```
 
 ```markdown
 💬 <old=0.0, new=96.3195, label=1>
