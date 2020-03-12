@@ -46,24 +46,26 @@ class BatchDB:
 def fetch_queries(db_batch: BatchDB) -> List[str]:
     """Build a batch of texts from single or/and many database queries."""
     if not isinstance(db_batch, BatchDB):
-        raise ValueError("db_batch is expected to be an instance of DatabaseBatch")
+        raise TypeError("db_batch is expected to be an instance of DatabaseBatch")
 
     batches: List[str] = []
     for batch in db_batch.queries:
         if isinstance(batch, Fetch):
             db = CommentsSql(batch.db)
-            texts = [
-                i.text for i in db.fetch_comments(batch.q) if i.text not in batches
-            ]
-            batches.extend(texts)
+            comments = db.fetch_comments(batch.q)
+            for comment in comments:
+                if comment.text in batches:
+                    continue
+                batches.append(comment.text)
 
         if isinstance(batch, FetchMany):
             db = CommentsSql(batch.db)
             for query in batch.q:
-                texts = [
-                    i.text for i in db.fetch_comments(query) if i.text not in batches
-                ]
-                batches.extend(texts)
+                comments = db.fetch_comments(query)
+                for comment in comments:
+                    if comment.text in batches:
+                        continue
+                    batches.append(comment.text)
 
     return batches
 
@@ -95,7 +97,6 @@ def segment_binary_dataset(data: Union[_Tx, _Ts], unpack=False):
     assert base2.count(0) == base2.count(1)
     dataset = list(zip(data, base2))
     np.random.shuffle(dataset)
-
     if unpack:
         data, base2 = zip(*dataset)
         return data, base2
@@ -140,7 +141,7 @@ def textblob_meta_learner(document: List[str], return_untrainable=False):
     `[0, 1]` for each string sequence and if output is `0.0`
      then, it gets added separately.
     """
-    msg.warn(f"* TextBlob annotating texts as binary [0|1] int labels.")
+    msg.warn(f" TextBlob annotating dataset with binary classes: 0 | 1")
 
     annotator = partial(_meta_learner, preprocessor=preprocess_string, learner=TextBlob)
     untrainable, trainable = [], []
@@ -153,46 +154,57 @@ def textblob_meta_learner(document: List[str], return_untrainable=False):
             k = 0 if polarity < 0.0 else 1
             trainable.append((text, k))
 
-    msg.good(
-        f"Annotator summary\nTrainable: ( {len(trainable)} ),"
-        f" Untrainable: ( {len(untrainable)} )."
-    )
+    msg.good(f" annotation summary 🤖")
+    msg.info(f" trainable: {len(trainable)}, un-trainable: {len(untrainable)}")
     if return_untrainable:
         return trainable, untrainable
     return trainable
 
 
-def batch_to_texts(batch: List[str], minlen: int, maxlen: int) -> List[str]:
-    """Transform a batch to an iterable of string sequences (texts)."""
+def batch_to_texts(batch: List[str], maxlen: int) -> List[str]:
+    """Transform a batch to an iterable of string sequences (texts).
+
+    NOTE: Filtering of small strings is done in the `texts_to_sents()`
+    method. Since the strings are tokenized to sentences. Lastly, any
+    existing (duplicated) strings are skipped.
+
+    `maxlen`: Skip any strings of length greater than a given maximum value.
+    """
     batch_size = len(batch)
-    msg.warn(f"* Found batch with {batch_size} samples...")
+    msg.warn(f" normalizing {batch_size} string sequences from batch.")
 
     texts: List[str] = []
-    for seq in tqdm(batch, desc="Batch", unit=""):
-        seq = preprocess_string(seq)
-        if len(seq) > minlen and len(seq) < maxlen and seq not in texts:
-            texts.append(seq)
+    for string in tqdm(batch, desc="sequences", unit=""):
+        string = preprocess_string(string)
+        if len(string) <= maxlen and string not in texts:
+            texts.append(string)
 
-    msg.info(f"* Removed {batch_size - len(texts)} items from {batch_size}.")
-    msg.good(f"* Returning {len(texts)} samples.")
+    large_strings = batch_size - len(texts)
+    msg.good(f" removed {large_strings} strings of length >= {maxlen}.")
+    msg.info(f" returning batch with {len(texts)} samples.")
     return texts
 
 
-def texts_to_sents(texts: List[str], spacy_model="en_core_web_sm") -> List[str]:
-    """Transform texts to to sentences using spaCy's sentence tokenizer."""
+def texts_to_sents(texts: List[str], minlen: int, spacy_model="en_core_web_sm"):
+    """Transform texts to to sentences using spaCy's sentence tokenizer.
+    
+    `mincount`: Skip any strings of length less than a given minimum value. 
+    """
     nlp = spacy.load(spacy_model)
-    msg.warn(f"* Transforming texts to sentences with {spacy_model} model.")
+    msg.warn(f" tokenizing strings to sentences, spaCy model: {spacy_model}.")
 
-    sentences = []
-    lines_count = 0
-    for doc in tqdm(nlp.pipe(texts), desc="Docs", unit=""):
+    sentences: List[str] = []
+    small_strings = 0
+    for doc in tqdm(nlp.pipe(texts), desc="sequences", unit=""):
         for sent in doc.sents:
             text = sent.text
-            sentences.append(sent.text)
-            lines_count += 1
+            if len(text) <= minlen:
+                small_strings += 1
+                continue
+            sentences.append(text)
 
-    msg.good(f"* Done! Sucessfully preprocessed {lines_count} sentences.")
-    msg.info(f"* Size before: {len(texts)}, and after: {len(sentences)}.")
+    msg.good(f" removed {small_strings} strings of length <= {minlen}.")
+    msg.info(f" previous-size: {len(texts)}, new-size: {len(sentences)}.")
     return sentences
 
 
@@ -220,6 +232,6 @@ def build_dataset(
             f"Invalid batch {type(batch)}. Must be an instance"
             " of BatchDB, GeneratorType or List[str]"
         )
-    texts = batch_to_texts(batch, minlen=min_strlen, maxlen=max_strlen)
-    sents = texts_to_sents(texts, spacy_model=spacy_model)
+    texts = batch_to_texts(batch, maxlen=max_strlen)
+    sents = texts_to_sents(texts, minlen=min_strlen, spacy_model=spacy_model)
     return textblob_meta_learner(sents, untrainable)

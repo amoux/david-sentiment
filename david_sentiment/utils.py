@@ -71,18 +71,22 @@ def nearest_emoji(score: float) -> str:
     return "⛔"
 
 
-def plot_losses(history, save=True, show=False, name="loss.png", dpi=300):
-    """Plot the training and validation loss."""
+def plot_losses(history, fmt1="c>", fmt2="m", show=True, save=False, name="loss.png", dpi=300):
+    """Plot the training and validation loss.
+
+    `fmt1, fmt2`: A format string consisting of `fmt='[marker][line][color]'`
+    """
     if hasattr(history, "history"):
         history = history.history
 
     acc = history["acc"]
-    val_acc = history["val_acc"]
     loss = history["loss"]
+    val_acc = history["val_acc"]
     val_loss = history["val_loss"]
     epochs = range(1, len(acc) + 1)
-    plt.plot(epochs, loss, "bo", label="training-loss")
-    plt.plot(epochs, val_loss, "b", label="validation-loss")
+
+    plt.plot(epochs, loss, fmr1, label="training-loss")
+    plt.plot(epochs, val_loss, fmt2, label="validation-loss")
     plt.title("training and validation loss")
     plt.xlabel("epochs")
     plt.ylabel("loss")
@@ -93,25 +97,28 @@ def plot_losses(history, save=True, show=False, name="loss.png", dpi=300):
         plt.show()
 
 
-def plot_accuracy(history, save=True, show=False, name="acc.png", dpi=300):
-    """Plot the training and validation accuracy."""
+def plot_accuracy(history, fmt1="c>", fmt2="m", show=True, save=False, name="acc.png", dpi=300):
+    """Plot the training and validation loss.
+
+    `fmt1, fmt2`: A format string consisting of `fmt='[marker][line][color]'`
+    """
     if hasattr(history, "history"):
         history = history.history
-    # plot.clf()
+
     acc = history["acc"]
     val_acc = history["val_acc"]
     epochs = range(1, len(acc) + 1)
-    plt.plot(epochs, acc, "bo", label="training-acc")
-    plt.plot(epochs, val_acc, "b", label="validation-acc")
+
+    plt.plot(epochs, acc, fmt1, label="training-acc")
+    plt.plot(epochs, val_acc, fmt2, label="validation-acc")
     plt.title("training and validation accuracy")
     plt.xlabel("epochs")
-    plt.ylabel("accuracy")
+    plt.ylabel("loss")
     plt.legend()
     if save:
         plt.savefig(name, dpi=dpi)
     if show:
         plt.show()
-    pass
 
 
 def INIFileConfig(filename: str, template: str = None, exist_ok=False):

@@ -40,11 +40,17 @@ class SentimentModel(SentimentConfig):
         )
         self.model = None
         self.vocab_matrix = None
-        self.embedding_layer = None
         if self.__config_loaded_from_file:
             self._load_model_and_tokenizer()
 
-    def embedding(self, mask_zero=False, l2=1e-6, trainable=False, ndim: str = None):
+    @property
+    def embedding_layer(self) -> Tuple[int, int, int]:
+        """Embedding layer representation of shape `(nsamples, ndim, lg-sequence)`."""
+        if self.vocab_shape is not None:
+            if self.max_seqlen is not None:
+                return (self.vocab_shape[0], self.vocab_shape[1], self.max_seqlen)
+
+    def embedding(self, l2=1e-6, ndim: str = None, trainable=False, mask_zero=False):
         """Fit the vocabulary to glove's embedding vectors.
 
         `mask_zero`: Note, masking is not supported for `Flatten()` layers.
@@ -62,26 +68,23 @@ class SentimentModel(SentimentConfig):
 
         vocab_index = self.tokenizer.vocab_index
         vocab_matrix = GloVe.fit_embeddings(vocab_index, ndim)
+
         l2_regulizer = L1L2(l2=l2) if l2 != 0 else None
-        embedding_layer = Embedding(
-            name="embedding",
-            input_dim=vocab_matrix.shape[0],
-            output_dim=vocab_matrix.shape[1],
-            weights=[vocab_matrix],
-            mask_zero=mask_zero,
-            input_length=self.max_seqlen,
-            trainable=trainable,
-        )
+        embedding_layer = Embedding(name="embedding",
+                                    input_dim=vocab_matrix.shape[0],
+                                    output_dim=vocab_matrix.shape[1],
+                                    weights=[vocab_matrix],
+                                    mask_zero=mask_zero,
+                                    input_length=self.max_seqlen,
+                                    trainable=trainable,)
+
         self.vocab_shape = vocab_matrix.shape
         return embedding_layer
 
-    def _compile_network(
-        self, task="pre-trained", model=None, layer=None, return_model=False
-    ):
+    def compile_network(self, model=None, layer=None, task="pre-trained", return_model=True):
         """Compile a network to the model for a specific learning task.
 
         `task`: Learning modes for two different tasks:
-
             `pre-trained` - learning from pre-trained embeddings (default - mode)
             `ad-hoc`      - learning a task-specific embedding from the document's vocabulary.
         """
@@ -110,34 +113,17 @@ class SentimentModel(SentimentConfig):
         if task == "pre-trained":
             if layer is not None and isinstance(layer, Embedding):
                 model = pretrained(Sequential() if model is None else model, layer)
+
         elif task == "ad-hoc":
             if layer is not None and len(layer) == 3:
                 model = adhoc(Sequential() if model is None else model, layer)
+
         if not return_model:
             self.model = model
         else:
             return model
 
-    def compile_network(self, model=None, layer=None, return_model=False):
-        """Compile the embedding model (returns model or takes place in-place)."""
-        if model is None:
-            model = Sequential()
-        if layer is None:
-            layer = self.embedding()
-
-        model.add(layer)
-        model.add(Flatten())
-        model.add(Dense(32, activation="relu"))
-        model.add(Dense(1, activation="sigmoid"))
-        model.compile(optimizer="rmsprop", loss="binary_crossentropy", metrics=["acc"])
-        if return_model:
-            return model
-        else:
-            self.model = model
-
-    def transform(
-        self, x=None, y=None, segment=False, split_ratio=0.2, mincount: int = None
-    ):
+    def transform(self, x=None, y=None, mincount: int = None, split_ratio=0.2, segment=True):
         """Transform texts and its labels to (x1, y1), (x2, y2)."""
         if x is not None and y is None:
             if segment:
@@ -174,27 +160,34 @@ class SentimentModel(SentimentConfig):
         x_test = pad_sequences(x_test, self.max_seqlen, padding=self.padding)
         return x_train, y_train, x_test, y_test
 
-    def train(
-        self, x=None, y=None, epochs=None, segment=True, split_ratio=0.2, batch_size=32,
-    ):
-        """Initialize the training session from texts and labels.
+    def train(self, x=None, y=None, epochs: int = None, split_ratio=0.2,
+              batch_size=32, l2=1e-6, ndim: str = None, segment=True,
+              return_datasets=False):
+        """Initialize training - transforming texts, labels and compiling the model.
 
-        NOTE: Model will be trained in place. Calls `self.transform()`,
-            `self.compile_network()` and `self.model.fit()` sequentially.
+        NOTE: Model will be of task pre-trained (GloVe Embeddings)
         """
         if epochs is None:
             epochs = self.epochs
-
-        x1, y1, x2, y2 = self.transform(x, y, segment, split_ratio)
-        self.compile_network()
+        if ndim is None:
+            ndim = self.glove_ndim
+        x1, y1, x2, y2 = self.transform(x, y, segment=segment,
+                                        split_ratio=split_ratio)
+        layer = self.embedding(l2=l2, ndim=ndim)
+        self.compile_network(task="pre-trained",
+                             layer=layer,
+                             return_model=False)
         self.model.fit(x1, y1,
                        epochs=epochs,
                        batch_size=batch_size,
                        verbose=1,
                        validation_data=(x2, y2),)
 
+        if return_datasets:
+            return x1, y1, x2, y2
+
     def _validate(self, x_val: List[str], y_val: List[int]):
-        # this should be in the train method. With a parameter to choice
+        # This should be in the train method. With a parameter as a choice
         # whether to return a callable object with the x_test, y_test data
         # sets loaded. So the user can simply call the method on his own.
         # Since (x1, y1), (x2, y2) is done internally.
@@ -204,6 +197,7 @@ class SentimentModel(SentimentConfig):
         x_val = self.tokenizer.document_to_sequences(document=x_val)
         x_val = pad_sequences(x_val, self.max_seqlen, padding=self.padding)
         loss, acc = self.model.evaluate(x_val, y_val)
+
         print(f"loss: {loss}\nacc: {acc}")
 
     def encode(self, sequence: str) -> List[Sequence[int]]:
