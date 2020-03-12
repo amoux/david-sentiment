@@ -160,7 +160,7 @@ def INIFileConfig(filename: str, template: str = None, exist_ok=False):
         return template_lines
 
 
-def interactive_session(sentiment: _SentimentModel, stopflag="quit") -> None:
+def interactive_session(sentiment: _SentimentModel, threshold=0.5, stopflag="quit") -> None:
     """Test a trained model interactively with your inputs.
 
     `sentiment`: class instance of a SentimentModel `predict()` is called.
@@ -170,7 +170,7 @@ def interactive_session(sentiment: _SentimentModel, stopflag="quit") -> None:
         chat = "\n* sentiment stats => emoji: {}, label: {}, confidence: {}%\n"
         input_text = input("input : ")
         if input_text.lower() != stopflag:
-            label, score = sentiment.predict(input_text)
+            label, score = sentiment.predict(input_text, threshold)
             print(chat.format(nearest_emoji(score), binary[label], round(score, 2)))
         elif input_text.lower() == stopflag:
             break
@@ -178,21 +178,19 @@ def interactive_session(sentiment: _SentimentModel, stopflag="quit") -> None:
             continue
 
 
-def test_unseen_samples(
-    sentiment: _SentimentModel,
-    test_data: Union[List[Tuple[str, float]], List[str]],
-    k: int = 10,
-) -> None:
+def test_unseen_samples(sentiment: _SentimentModel,
+                        test_data: Union[List[Tuple[str, float]], List[str]],
+                        threshold=0.5, k: int = 10) -> None:
     """Predict sentiment scores on a test dataset with texts with/or without scores."""
     if isinstance(test_data, list):
         if not isinstance(test_data[0], tuple):
             test_data = list(zip(test_data, len(test_data) * [0.0]))
 
     for text, y_score in random.sample(test_data, k=k):
-        label, x_score = sentiment.predict(text)
+        label, x_score = sentiment.predict(text, threshold)
         emoji = nearest_emoji(x_score)
         text = normalize_whitespace(text)
-        print(f"💬 <old={y_score}, new={x_score}>\n {emoji} - {text}\n")
+        print(f"💬 <old={y_score}, new={x_score}, label={label}>\n {emoji} - {text}\n")
 
 
 def test_polarity_distance(sentiment: _SentimentModel, ntest=1) -> None:

@@ -182,103 +182,106 @@ plot_accuracy(history, show=True, save=False)
 
 <img src="src/acc.png" />
 
-Save the project: Call `save_project()` to create the project directories which saves all the essential settings for initiating a previous state, including; the trained-model and tokenizers vocab files:
-
-- config file         : `<project_name>/config.init`
-- trained model       : `<project_name>/model/model.h5`
-- tokenizer vocab     : `<project_name>/vocab/vocab.pkl`
-
-```python
-ytc_sentiment.save_project()
-```
-
-Loading a saved project
-
-```python
-from david_sentiment import SentimentConfig, SentimentModel
-config = SentimentConfig.load_project('ytc_sentiment/config.ini')
-ytc_sentiment = SentimentModel(config)
-
-print(ytc_sentiment)
-'<SentimentModel(max_seqlen=62, vocab_shape=(2552, 100))>'
-```
-
 ## Results
 
-- With punctuation
+The results below are after training the model with `37744` samples, `13` epochs, and `300 dimensional` GloVe embeddings
+
+- Network: (2-Dense Layers):
+  - 1st layer = `16` *hidden-units*, activation = ***relu***
+  - 2nd layer = `1` *hidden-unit*, activation = ***sigmoid***
+  
+- The last layer being the output scalar prediction regarding the sentiment of the input.
+
+> **..** `+` **:)**
 
 ```python
-ytc_sentiment.print_predict("hello, world! i am glad this demo worked! :)")
-  "input: hello, world! i am glad this demo worked! :) < pos(😍) (98.3824)% >"
+sentiment.print_predict('idk how i feel anymore.. :)')
+...
+input: < pos(😊) (68.9933)% >
 ```
 
-- Without punctuation
+> **..** `+` **:(**
 
 ```python
-ytc_sentiment.print_predict("hello world I am glad this demo worked")
-  "input: hello world I am glad this demo worked < pos(😀) (91.5674)% >"
+sentiment.print_predict('idk how i feel anymore.. :(')
+...
+input: < neg(😡) (10.4026)% >
+```
+
+> **..**
+
+```python
+sentiment.print_predict('idk how i feel anymore..')
+...
+input: < pos(😶) (50.6473)% >
+```
+
+> **.**
+
+```python
+sentiment.print_predict("idk how i feel anymore.")
+...
+< neg(😬) (36.1655)% >
 ```
 
 **Textblob** vs ***SentimentModel*** trained on `1132` samples and `100` epochs.
 
 ```markdown
-💬 (Textblob=0.0, SentimentModel=99.8896)
-  😍 - pewdiepie plz u subcribe me and make a video on me
+💬 <old=0.0, new=66.1303, label=1>
+ 😊 - then I recorded my gameplay and posted it on YouTube
 
-💬 (Textblob=0.0, SentimentModel=91.9985)
-  😀 - You should make a video of you playing PUBG on this phone.
+💬 <old=0.0, new=92.5349, label=1>
+ 🤗 - You are actually make me realize the importance of focus on Myself instead of criticizing others.
 
-💬 (Textblob=0.0, SentimentModel=48.4672)
-  😶 - If it's supposed to be an april fools
+💬 <old=0.0, new=98.9677, label=1>
+ 😍 - , I lost my job, I was feeling so blue and
 
-💬 (Textblob=0.0, SentimentModel=95.139)
-  🤗 - Would you please make a video on Funcl W1 and Funcl AI earphones.
+💬 <old=0.0, new=87.7247, label=1>
+ 😀 - You just want some likes.
 
-💬 (Textblob=0.0, SentimentModel=78.5567)
-  😁 - Will you make a video on it ?
+💬 <old=0.0, new=6.0083, label=0>
+ 🤬 - “...50 lbs of 💩 in a 5 lb bag!”
 
-💬 (Textblob=0.0, SentimentModel=98.7835)
-  😍 - Please think about it and make a video if you can.
+💬 <old=0.0, new=97.5032, label=1>
+ 😍 - I wanted a reliable phone with me until the Note 10 comes out.
 
-💬 (Textblob=0.0, SentimentModel=94.1769)
-  🤗 - we could hope to see in 2020??
+💬 <old=0.0, new=91.0801, label=1>
+ 😀 - " I just can't get enough of it.
 
-💬 (Textblob=0.0, SentimentModel=98.7844)
-  😍 - Make a video about not a smartphone plzzzzzzz
+💬 <old=0.0, new=72.4068, label=1>
+ 😊 - but how i improve myself like python develper.
 
-💬 (Textblob=0.0, SentimentModel=47.5426)
-  😶 - Think about that.
+💬 <old=0.0, new=65.479, label=1>
+ 😊 - 10 april tak kya nhi aa
 
-💬 (Textblob=0.0, SentimentModel=98.4927)
-  😍 - can you make a video on how to make thumbnail.
-
-💬 (Textblob=0.0, SentimentModel=1.5344)
-  🤬 - Please make a video about the vivo nex 2! 🙏
-
-💬 (Textblob=0.0, SentimentModel=89.943)
-  😀 - Your biggest fan
-
-💬 (Textblob=0.0, SentimentModel=97.6116)
-  😍 - Please make a video on how to use Facebook without internet.
-
-💬 (Textblob=0.0, SentimentModel=61.0681)
-  😑 - A BIG DEAL
-
-💬 (Textblob=0.0, SentimentModel=91.3205)
-  😀 - but I use my phone a lot for work and Netflix
-
-💬 (Textblob=0.0, SentimentModel=40.8797)
-  😒 - so why stop.
-
-💬 (Textblob=0.0, SentimentModel=97.6973)
-  😍 - Health, wealth and mind.
-
-💬 (Textblob=0.0, SentimentModel=55.4884)
-  😑 - Dose
-
-💬 (Textblob=0.0, SentimentModel=42.6375)
-  😒 - I would like to know your opinion.
-
-💬 (Textblob=0.0, SentimentModel=26.5492)
-  😤 - Liza don’t believe those hater lovers are here for you
+💬 <old=0.0, new=99.0795, label=1>
+ 😍 - and I think I need to master reading to master the meditation
 ```
+
+## Saving/Loading
+
+Save the project: Call `save_project()` to create the project directories which saves all the essential settings for initiating a previous state, including; the trained-model and tokenizers vocab files:
+
+- project:
+  - config file         : `<project_name>/config.init`
+  - trained model       : `<project_name>/model/model.h5`
+  - tokenizer vocab     : `<project_name>/vocab/vocab.pkl`
+
+> saving
+
+```python
+sentiment.save_project()
+```
+
+> loading
+
+```python
+from david_sentiment import SentimentConfig, SentimentModel
+
+config = SentimentConfig.load_project('my-model/config.ini')
+sentiment = SentimentModel(config)
+print(sentiment)
+'<SentimentModel(max_seqlen=62, vocab_shape=(2552, 100))>'
+```
+
+The parameters, model, and tokenizer are loaded automatically after passing the config object to the SentimentModel class.

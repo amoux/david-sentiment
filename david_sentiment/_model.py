@@ -65,10 +65,8 @@ class SentimentModel(SentimentConfig):
             trainable = self.trainable
         if ndim is None:
             ndim = self.glove_ndim
-
         vocab_index = self.tokenizer.vocab_index
         vocab_matrix = GloVe.fit_embeddings(vocab_index, ndim)
-
         l2_regulizer = L1L2(l2=l2) if l2 != 0 else None
         embedding_layer = Embedding(name="embedding",
                                     input_dim=vocab_matrix.shape[0],
@@ -113,11 +111,9 @@ class SentimentModel(SentimentConfig):
         if task == "pre-trained":
             if layer is not None and isinstance(layer, Embedding):
                 model = pretrained(Sequential() if model is None else model, layer)
-
         elif task == "ad-hoc":
             if layer is not None and len(layer) == 3:
                 model = adhoc(Sequential() if model is None else model, layer)
-
         if not return_model:
             self.model = model
         else:
@@ -186,18 +182,24 @@ class SentimentModel(SentimentConfig):
         if return_datasets:
             return x1, y1, x2, y2
 
-    def _validate(self, x_val: List[str], y_val: List[int]):
-        # This should be in the train method. With a parameter as a choice
-        # whether to return a callable object with the x_test, y_test data
-        # sets loaded. So the user can simply call the method on his own.
-        # Since (x1, y1), (x2, y2) is done internally.
-        if not isinstance(y_val, np.ndarray):
-            y_val = np.asarray(y_val).astype("int32")
+    def evaluate(self, x_test, y_test, model=None, transform=False):
+        """Evaluate the test sets (texts, labels).
 
-        x_val = self.tokenizer.document_to_sequences(document=x_val)
-        x_val = pad_sequences(x_val, self.max_seqlen, padding=self.padding)
-        loss, acc = self.model.evaluate(x_val, y_val)
+        This method is the same as using `model.evaluate(x2, y2)`.
 
+        `transform`: tranform integer labels to numpy arrays, convert string
+            sequences to sequences of integers (int32) and pad the sequences.
+            (note: this assumes the texts and labels have not been transformed
+            already. otherwise leave as false).
+        """
+        if transform:
+            if not isinstance(y_test, np.ndarray):
+                y_test = np.asarray(y_test).astype("int32")
+            x_test = self.tokenizer.document_to_sequences(x_test)
+            x_test = pad_sequences(x_test, self.max_seqlen, "int32", self.padding)
+
+        model = self.model if model is None else model
+        loss, acc = model.evaluate(x_test, y_test)
         print(f"loss: {loss}\nacc: {acc}")
 
     def encode(self, sequence: str) -> List[Sequence[int]]:
@@ -208,17 +210,18 @@ class SentimentModel(SentimentConfig):
             max_seqlen = int(max_seqlen)
         return pad_sequences([embedd], maxlen=max_seqlen, padding=self.padding)
 
-    def predict(self, sequence: str, k=0.6) -> float:
+    def predict(self, sequence: str, k=0.5, model=None) -> float:
         """Predict the sentiment value for a given string."""
         embedd_input = self.encode(sequence)
-        embedd_score = self.model.predict(embedd_input)[0]
+        model = self.model if model is None else model
+        embedd_score = model.predict(embedd_input)[0]
         rounded_score = round(embedd_score[0] * 100, 4)
         if embedd_score[0] >= k:
             return (1, rounded_score)
         else:
             return (0, rounded_score)
 
-    def print_predict(self, text: str, k=0.6) -> None:
+    def print_predict(self, text: str, k=0.5) -> None:
         """Pretty print the prediction from a given string sequence."""
         label, score = self.predict(text, k=k)
         emoji = nearest_emoji(score)
