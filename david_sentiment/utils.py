@@ -85,7 +85,7 @@ def plot_losses(history, fmt1="c>", fmt2="m", show=True, save=False, name="loss.
     val_loss = history["val_loss"]
     epochs = range(1, len(acc) + 1)
 
-    plt.plot(epochs, loss, fmr1, label="training-loss")
+    plt.plot(epochs, loss, fmt1, label="training-loss")
     plt.plot(epochs, val_loss, fmt2, label="validation-loss")
     plt.title("training and validation loss")
     plt.xlabel("epochs")
