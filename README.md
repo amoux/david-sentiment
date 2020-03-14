@@ -26,13 +26,12 @@ New tokenizer preprocessing features:
 from david_sentiment import SentimentConfig
 
 # you can define everything upfront or as you go.
-config = SentimentConfig(project_dir="my-model",
+config = SentimentConfig(project="my-model",
                          max_strlen=1000,
                          min_strlen=20,
-                         epochs=13,
                          enforce_ascii=True,
                          remove_urls=True,
-                         glove_ndim="300d",)  
+                         ndim="300d",)  
 ```
 
 Build a dataset from database queries:
@@ -113,7 +112,7 @@ len(x_train), len(x_test)
 Getting the embedding layer for the model. `[50d, 100d, 200d, 300d]` available.
 
 ```python
-embedding_layer = sentiment.embedding(l2=1e-6, ndim="300d")
+embedding_layer = sentiment.embedding(module="6b", ndim="300d", l2=1e-6)
 ...
 ✔ '<(dim=300, vocab=13147)>'
 ✔ 'embedding vocabulary 👻'
@@ -132,7 +131,7 @@ Model: "david-sentiment (PT)"
 _________________________________________________________________
 Layer (type)                 Output Shape              Param #   
 =================================================================
-embedding (Embedding)        (None, 125, 300)          3944100   
+GloVe-6B-300d (Embedding)    (None, 166, 300)          2821600   
 _________________________________________________________________
 flatten_1 (Flatten)          (None, 37500)             0         
 _________________________________________________________________
@@ -149,11 +148,10 @@ _________________________________________________________________
 - And finally train your model!
 
 ```python
-history = model.fit(x_train, y_train,
-                    epochs=13,
-                    batch_size=512,
-                    validation_data=(x_test, y_test))
-...
+history = pt_model.fit(x_train, y_train,
+                       epochs=13,
+                       batch_size=512,
+                       validation_data=(x_test, y_test))
 ```
 
 ```bash
@@ -185,7 +183,7 @@ plot_accuracy(history, show=True, save=False)
 
 ## Results
 
-The results below are after training the model with `37744` samples, `13` epochs, and `200 dimensional` GloVe embeddings
+The results below are after training the model with `37744` samples, `13` epochs, and `300 dimensional` GloVe embeddings
 
 - Network: (2-Dense Layers):
   - 1st layer = `32` *hidden-units*, activation = ***relu***
@@ -226,10 +224,10 @@ input: < neg(😬) (36.1655)% >
 ```
 
 ```python
-from david_sentiment.utils import test_unseen_samples
+from david_sentiment.utils import test_untrained
 
 # try running predictions on the un-trainable dataset (shuffled)
-test_unseen_samples(sentiment, untrainable, k=13)
+test_untrained(sentiment, untrainable, k=13)
 ```
 
 ```markdown
@@ -296,7 +294,7 @@ from david_sentiment import SentimentConfig, SentimentModel
 config = SentimentConfig.load_project('my-model/config.ini')
 sentiment = SentimentModel(config)
 print(sentiment)
-'<SentimentModel(max_seqlen=62, vocab_size=(2552, 100))>'
+'<SentimentModel(vocab_size=13147, ndim=300, max_seqlen=166)>'
 ```
 
 The parameters, model, and tokenizer are loaded automatically after passing the config object to the SentimentModel class.
