@@ -2,7 +2,7 @@
 
 ## Unsupervised Sentiment Models
 
-> Why *sentiment models from youtube comments?* - Because Twitter text-datasets are overrated, and lack ***sentimentalism***; *The excessive expression of feelings of tenderness, sadness, or nostalgia in behavior, writing, or speech.*
+- Train a custom sentiment model with just a few lines of code - Making it easy to try different configurations or preprocessing techniques. No labeled data? Don't worry there's an easier way - see below!
 
 ## Todo
 
@@ -11,16 +11,9 @@
   - Encoder/Decoder masking
   - Text generation (RNN)
 
-- Train a custom sentiment model with just a few lines of code - Making it easy to try different configurations or preprocessing techniques.
-
-### Usage
+### Initialization/Configuration
 
 - Create a new project
-
-New tokenizer preprocessing features:
-
-- `enforce_ascii` : Keep only printable chars are added including emojis.
-- `remove_urls`   : Remove all urls from the vocab.
 
 ```python
 from david_sentiment import SentimentConfig
@@ -34,7 +27,9 @@ config = SentimentConfig(project="my-model",
                          ndim="300d",)  
 ```
 
-Build a dataset from database queries:
+## Building a Trainable Dataset
+
+From a database
 
 ```python
 import david_sentiment.dataset as ds
@@ -44,10 +39,7 @@ batch = ds.BatchDB([ds.Fetch('unbox', "%make a video%"),
 trainable = ds.build_dataset(batch, config, untrainable=False) # default
 ```
 
-- The `build_dataset()` method works for any iterable of strings.
-  - A `trainable` is simply a document annotated by the meta learner (In this case TextBlob).
-
-> At the moment only binary classification datasets are compatible with the full pipeline. But I am planning  to implement multi-categorical features for the same semantic tasks.
+Or from an iterable list with string sequences.
 
 ```python
 from david_sentiment.dataset import YouTubeComments
@@ -75,38 +67,33 @@ sequences: 100%|██████████| 61478/61478 [00:54<00:00, 1130.3
 ℹ  trainable: 73356, un-trainable: 68986
 ```
 
-You can train the model with one line - or `step-by-step` **(see below)**
+## Building a Sentiment Model
+
+There's two ways to train a model - with a `one-liner` or `step-by-step`.
+
+### One-liner
+
+- texts: `x=List[str]`, labels: `y=List[int]`
+
+- or texts-labels: `x=List[Tuple[List[str], List[int]]]]`
 
 ```python
 from david_sentiment import SentimentModel
 
 sentiment = SentimentModel(config)
-sentiment.train(trainable) # List[Tuple[List[str], List[int]]]]
+sentiment.train(trainable)
 ```
 
-## Working with the model step-by-step (made easy)
+### Step-by-Step
 
-The `SentimentModel` class holds all the essential properties of your dataset, like your vocabulary and all common attributes required for building, batching, compiling etc so you can focus on building, training, and experimenting.
-
-- Also, why do we need a class for passing objects around?
-  - Instead of passing a bunch of globals all over, you can keep everything in one place. Your workspace stays tidy so you can focus on training and building the model and not managing or trying to locate all those global variables.
-
-- I have a lot of documents?
-  - If you have over 5000K samples, I recommend dropping tokens with a frequency of 2 or more (but it depends on your dataset).
+> Before training, we need to transform the trainable document and its binary labels
+to the format the model expects (`segment=True` fits the document to 1:1 ratio)
+1:1 meaning 50% 50% distribution on the `[0, 1]` binary classes. Also, here we can decide to remove tokens with low frequency `mincount=2` : removes tokens of only two observations from the trainable document.
 
 ```python
-# You can also add existing models and or any models you make later.
-# this is a clean way to avoid collisions if you where to train many models with the same instance.
-pt_model = SentimentModel.clone(sentiment, model)
-
-# finally, transform the trainable document and its binary labels
-# to the format the model expects (segment=True fits the document to 1:1 ratio)
-# 1:1 meaning 50% 50% distribution on the [0, 1] binary classes (important!)
 x_train, y_train, x_test, y_test = sentiment.transform(trainable, mincount=2)
-len(x_train), len(x_test) 
 ...
 'ℹ * Removed 13802 tokens from 26948'
-(37744, 9436)
 ```
 
 Getting the embedding layer for the model. `[50d, 100d, 200d, 300d]` available.
@@ -120,13 +107,20 @@ embedding = sentiment.embedding(module="6b", ndim="300d", l2=1e-6)
 '/home/<usr>/david_models/glove/glove.6B/glove.6B.300d.txt'
 ```
 
+> NOTE: You can also add existing models and or any models you make later. This is a clean way to avoid collisions if you where to train many models with the same instance:
+
+- simply clone your first instance and with a `Sequential` keras-model - (use **del model_variable** to delete unused instances).
+
+  - `sm2 = SentimentModel.clone(sentiment, keras_model)`
+
+Get the embedding layer.
+
 ```python
 pt_model = sentiment.compile_net(None, layer=embedding, mode="pre-trained")
 pt_model.summary()
 ```
 
 ```bash
-...
 Model: "david-sentiment (PT)"
 _________________________________________________________________
 Layer (type)                 Output Shape              Param #   
@@ -145,7 +139,7 @@ Non-trainable params: 3,944,100
 _________________________________________________________________
 ```
 
-- And finally train your model!
+And finally train your model!
 
 ```python
 history = pt_model.fit(x_train, y_train,
@@ -271,7 +265,7 @@ test_untrained(sentiment, untrainable, k=13)
  😠 - only me with this problem???
 ```
 
-## Saving/Loading
+## Saving your project
 
 Save the project: Call `save_project()` to create the project directories which saves all the essential settings for initiating a previous state, including; the trained-model and tokenizers vocab files:
 
@@ -286,15 +280,98 @@ Save the project: Call `save_project()` to create the project directories which 
 sentiment.save_project()
 ```
 
-> loading
+> Or, if you have multiple instances of the `SentimentModel` class
 
 ```python
-from david_sentiment import SentimentConfig, SentimentModel
+...
+# update any values done outside the instance
+pt.epochs = 5
+adhoc.epochs = 6
 
-config = SentimentConfig.load_project('my-model/config.ini')
-sentiment = SentimentModel(config)
-print(sentiment)
+# give the project a unique name:
+pt.project = "pt-model"
+adhoc.project = "adhoc-model"
+
+# save!
+pt.save_project()
+adhoc.save_project()
+```
+
+## Loading your saved project
+
+> This is one way:
+
+```python
+from david_sentiment import SentimentModel, SentimentConfig
+
+config = SentimentConfig.load_project('pt-model-001/config.ini')
+pt = SentimentModel(config)
+
+print(pt)
 '<SentimentModel(vocab_size=13147, ndim=300, max_seqlen=166)>'
 ```
+
+> This is an easier way:
+
+```python
+pt = SentimentModel('pt-model-002/config.ini')
+
+print(pt)
+'<SentimentModel(vocab_size=1987, ndim=200, max_seqlen=71)>'
+....
+```
+
+What things work after re-loading from a `config.ini` file (or many)?
+
+- Tokenizer is fully loaded as you expect things to work.
+
+```python
+pt.tokenizer.bag_of_tokens()  # decoders/encoders too
+...
+[('the', 1), ('.', 2), (',', 3), ('to', 4), ('and', 5)]
+```
+
+- Including the details, making it easy to try other models!
+
+```python
+pt.input_shape
+...
+(1987, 200, 71)  # (vocab_size, ndim, max_seqlen)
+```
+
+- The keras model is loaded as-well, so you can run predictions right-away.
+
+```python
+pt.predict_print("Hello World!!")
+...
+'input: "Hello World!!" < pos(🤗) (92.8864)% >'
+```
+
+- Btw, this is where you can access the keras model - (duh!)
+
+```python
+pt.model.summary()
+```
+
+```markdown
+Model: "david-sentiment (PT)"
+_________________________________________________________________
+Layer (type)                 Output Shape              Param #   
+=================================================================
+GloVe-27B-200d (Embedding)   (None, 71, 200)           397400    
+_________________________________________________________________
+flatten_1 (Flatten)          (None, 14200)             0         
+_________________________________________________________________
+dense_1 (Dense)              (None, 32)                454432    
+_________________________________________________________________
+dense_2 (Dense)              (None, 1)                 33        
+=================================================================
+Total params: 851,865
+Trainable params: 454,465
+Non-trainable params: 397,400
+_________________________________________________________________
+
+```
+
 
 The parameters, model, and tokenizer are loaded automatically after passing the config object to the SentimentModel class.

@@ -23,12 +23,19 @@ class SentimentModel(SentimentConfig):
     __config_loaded_from_file = False
 
     def __init__(self, model_config=None, **kwargs):
-        """Load the model from a configuration instance."""
+        """Load the model from a configuration.
+
+        `model_config`: A `path/to/config.ini` or an instance of `SentimentConfig`.
+        """
         if model_config is not None:
             if isinstance(model_config, SentimentConfig):
                 if path.isfile(model_config.config_file):
                     self.__config_loaded_from_file = True
                 kwargs = asdict(model_config)
+            elif isinstance(model_config, str):
+                if path.isfile(model_config):
+                    self.__config_loaded_from_file = True
+                kwargs = asdict(self.load_project(model_config))
 
         super().__init__(**kwargs)
         self.tokenizer = Tokenizer(
