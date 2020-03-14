@@ -49,6 +49,9 @@ class SentimentModel(SentimentConfig):
         self.vocab_matrix = None
         if self.__config_loaded_from_file:
             self._load_model_and_tokenizer()
+            # the tokenizer needs to be loaded
+            # by calling the following method.
+            self.tokenizer.fit_vocabulary()
 
     @property
     def input_shape(self) -> Tuple[int, int, int]:
@@ -84,7 +87,6 @@ class SentimentModel(SentimentConfig):
                             "found, {}.".format(type(module)))
     
         name = f"GloVe-{module.upper()}-{ndim}"
-
         matrix = glove_module(ndim=ndim, vocab=self.tokenizer.vocab_index)
         l2_regulizer = L1L2(l2=l2) if l2 != 0 else None
         embedding_layer = Embedding(name=name,
@@ -144,7 +146,8 @@ class SentimentModel(SentimentConfig):
         else:
             return model
 
-    def transform(self, x=None, y=None, mincount: int = None, split_ratio=0.2, segment=True):
+    def transform(self, x=None, y=None, mincount: int = None,
+                  split_ratio=0.2, segment=True, extra_vocab=None):
         """Transform texts and its labels to (x1, y1), (x2, y2)."""
         if x is not None and y is None:
             if segment:
@@ -158,7 +161,8 @@ class SentimentModel(SentimentConfig):
                 data, labels = segment_binary_dataset((x, y), True)
             data, labels = x, y
         else:
-            raise ValueError("Please check your objects.")
+            raise ValueError("Data is not an iterable of list or tuple"
+                             f", got {type(x or y)}.")
 
         if mincount is None:
             mincount = self.mincount
@@ -183,33 +187,46 @@ class SentimentModel(SentimentConfig):
         self.vocab_size = self.tokenizer.vocab_size + 1
         return x_train, y_train, x_test, y_test
 
-    def train(
-        self,
-        x=None,
-        y=None,
-        epochs: int = None,
-        split_ratio=0.2,
-        batch_size=32,
-        l2=1e-6,
-        ndim: str = None,
-        module="6b",
-        segment=True,
-        return_datasets=False,
-    ):
-        """Initialize training - transforming texts, labels and compiling the model.
+    def train(self,
+              x=None,
+              y=None,
+              epochs: int = None,
+              batch_size=32,
+              mincount: int = None,
+              split_ratio=0.2,
+              segment=True,
+              mode="pre-trained",
+              module="6b",
+              ndim: str = None,
+              l2=1e-6,
+              return_datasets=False):
+        """Initialize training - transforming texts, labels to arrays and compiling the model.
 
-        NOTE: Model will be of task pre-trained (GloVe Embeddings)
+        Arguments:
+        ----------
+            x: Either a `List[str]` of strings or `List[Tuple[List[str], List[int]]]`
+                where `List[str]` are strings and `List[int]` are binary labels of `0|1`.
+            y: If `x` argument is a list of strings then `y` is a list of binary integers.
+            epochs: Number of iterarations per batch.
+            mincount: Reduce the number of tokens with a min-count/frequecy of N.
+            mode: Whether to train the model as `'pre-trained' or 'ad-hoc'`.
+            return_dataset: Whether to return the train and test sets `x1, y1, x2, y2`.
         """
-        if epochs is None:
-            epochs = self.epochs
-        if ndim is None:
-            ndim = self.ndim
-        x1, y1, x2, y2 = self.transform(x, y, segment=segment, split_ratio=split_ratio)
+        if epochs is not None and isinstance(epochs, int):
+            self.epochs = epochs
+        elif ndim is not None and isinstance(ndim, str):
+            self.ndim = ndim
 
-        layer = self.embedding(module, l2=l2, ndim=ndim)
-        self.compile_net(mode="pre-trained", layer=layer, return_model=False)
+        x1, y1, x2, y2 = self.transform(x, y, mincount, split_ratio, segment)
+
+        if mode == "pre-trained":
+            layer = self.embedding(module, ndim=self.ndim, l2=l2)
+        elif mode == "ad-hoc":
+            layer = self.input_shape
+
+        self.compile_net(None, layer=layer, mode=mode, return_model=False)
         self.model.fit(x1, y1,
-                      epochs=epochs,
+                      epochs=self.epochs,
                       batch_size=batch_size,
                       verbose=1,
                       validation_data=(x2, y2))
@@ -241,6 +258,7 @@ class SentimentModel(SentimentConfig):
         """Pad an input string sequence based on the model's padding."""
         embedd = self.tokenizer.convert_string_to_ids(sequence)
         max_seqlen = self.max_seqlen
+
         if not isinstance(max_seqlen, int):
             max_seqlen = int(max_seqlen)
         return pad_sequences([embedd], maxlen=max_seqlen, padding=self.padding)
@@ -251,6 +269,7 @@ class SentimentModel(SentimentConfig):
         model = self.model if model is None else model
         embedd_score = model.predict(embedd_input)[0]
         rounded_score = round(embedd_score[0] * 100, 4)
+
         if embedd_score[0] >= k:
             return (1, rounded_score)
         else:
@@ -290,6 +309,7 @@ class SentimentModel(SentimentConfig):
                     setattr(sentiment_obj, key, x)
                 else:
                     setattr(sentiment_obj, key, value)
+
         return sentiment_obj
 
     def __repr__(self):
