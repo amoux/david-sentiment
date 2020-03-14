@@ -26,12 +26,12 @@ New tokenizer preprocessing features:
 from david_sentiment import SentimentConfig
 
 # you can define everything upfront or as you go.
-config = SentimentConfig(project_dir="my-model",
+config = SentimentConfig(project="my-model",
+                         min_strlen=20,
                          max_strlen=3000,
-                         epochs=10,
                          enforce_ascii=True,
                          remove_urls=True,
-                         glove_ndim="100d",)  
+                         ndim="100d",)  
 ```
 
 Build a dataset from database queries:
@@ -50,17 +50,17 @@ trainable = ds.build_dataset(batch, config, untrainable=False) # default
 > At the moment only binary classification datasets are compatible with the full pipeline. But I am planning  to implement multi-categorical features for the same semantic tasks.
 
 ```python
-from david_sentiment.dataset import YTComments
+from david_sentiment.dataset import YouTubeComments
 from david_sentiment.dataset import build_dataset
 
-dataset = YTComments.load_dataset_as_doc() # returns a generator
+comments = YouTubeComments()
+dataset = dataset.texts() # returns a generator
 trainable, untrainable = build_dataset(dataset, config, untrainable=True)
 ```
 
 - A document goes through a carefully designed pipeline; It is important for you to know what is going on in the background. So if you want to inspect why your documents where `Untrainable` - you can simple ask the method to return it. Here's the output and information after executing the `build_dataset()` method.
 
 ```bash
-...
 ⚠ * Found batch with 61478 samples...
 Batch: 100%|██████████| 61478/61478 [00:56<00:00, 1086.96/s]
 
@@ -79,7 +79,7 @@ You can train the model with one line - or `step-by-step` **(see below)**
 from david_sentiment import SentimentModel
 
 sentiment = SentimentModel(config)
-sentiment.train(trainable) # List[Tuple[List[str, int]]]
+sentiment.train(trainable) # List[Tuple[List[str], List[int]]]]
 ```
 
 ## Working with the model step-by-step (made easy)
@@ -93,15 +93,9 @@ The `SentimentModel` class holds all the essential properties of your dataset, l
   - If you have over 5000K samples, I recommend dropping tokens with a frequency of 2 or more (but it depends on your dataset).
 
 ```python
-# What if you already mande an instance of the SentimentModel class?
-# There's no need to pass the config object around! You can simply clone
-# the instance cleanly with one step (you can do this as many times you want).
-sentiment = SentimentModel.clone(sentiment)
-
-# You can also add existing models and or any models you make later like this:
-# this a clean hack to work with the same state and let you experiment with many
-# models without running into collisions if you where to use the same instance.
-sentiment = SentimentModel.clone(sentiment, model)
+# You can also add existing models and or any models you make later.
+# this is a clean way to avoid collisions if you where to train many models with the same instance.
+pt_model = SentimentModel.clone(sentiment, model)
 
 # finally, transform the trainable document and its binary labels
 # to the format the model expects (segment=True fits the document to 1:1 ratio)
@@ -115,7 +109,7 @@ x_train, y_train, x_test, y_test = sentiment.transform(trainable,
 Getting the embedding layer for the model. `[50d, 100d, 200d, 300d]` available.
 
 ```python
-embedding_layer = sentiment.embedding(l2=1e-6, ndim="200d")
+embedding = sentiment.embedding(module="6b" ndim="200d", l2=1e-6)
 ...
 ✔ '<(dim=200, vocab=14108)>'
 ✔ 'embedding vocabulary 👻'
@@ -124,17 +118,17 @@ embedding_layer = sentiment.embedding(l2=1e-6, ndim="200d")
 ```
 
 ```python
-model = sentiment.compile_network(None, embedding_layer, return_model=True)
-model.summary()
+pt_model = sentiment.compile_net(None, layer=embedding, mode="pre-trained")
+pt_model.summary()
 ```
 
 ```bash
 ...
-Model: "sequential_1"
+Model: "david-sentiment (PT)"
 _________________________________________________________________
 Layer (type)                 Output Shape              Param #   
 =================================================================
-embedding (Embedding)        (None, 166, 200)          2821600   
+GloVe-6B-200d (Embedding)    (None, 166, 200)          2821600   
 _________________________________________________________________
 flatten_1 (Flatten)          (None, 33200)             0         
 _________________________________________________________________
@@ -151,11 +145,10 @@ _________________________________________________________________
 - And finally train your model!
 
 ```python
-history = model.fit(x_train, y_train,
-                    epochs=20,
-                    batch_size=512,
-                    validation_data=(x_test, y_test))
-...
+history = pt_model.fit(x_train, y_train,
+                       epochs=20,
+                       batch_size=512,
+                       validation_data=(x_test, y_test))
 ```
 
 ```bash
@@ -187,10 +180,10 @@ plot_accuracy(history, show=True, save=False)
 
 ## Results
 
-The results below are after training the model with `37744` samples, `13` epochs, and `300 dimensional` GloVe embeddings
+The results below are after training the model with `37744` samples, `13` epochs, and `200 dimensional` GloVe embeddings
 
 - Network: (2-Dense Layers):
-  - 1st layer = `16` *hidden-units*, activation = ***relu***
+  - 1st layer = `32` *hidden-units*, activation = ***relu***
   - 2nd layer = `1` *hidden-unit*, activation = ***sigmoid***
   
 - The last layer being the output scalar prediction regarding the sentiment of the input.
@@ -198,7 +191,7 @@ The results below are after training the model with `37744` samples, `13` epochs
 > **..** `+` **:)**
 
 ```python
-sentiment.print_predict('idk how i feel anymore.. :)')
+sentiment.predict_print('idk how i feel anymore.. :)')
 ...
 input: < pos(😊) (68.9933)% >
 ```
@@ -206,7 +199,7 @@ input: < pos(😊) (68.9933)% >
 > **..** `+` **:(**
 
 ```python
-sentiment.print_predict('idk how i feel anymore.. :(')
+sentiment.predict_print('idk how i feel anymore.. :(')
 ...
 input: < neg(😡) (10.4026)% >
 ```
@@ -214,7 +207,7 @@ input: < neg(😡) (10.4026)% >
 > **..**
 
 ```python
-sentiment.print_predict('idk how i feel anymore..')
+sentiment.predict_print('idk how i feel anymore..')
 ...
 input: < pos(😶) (50.6473)% >
 ```
@@ -222,12 +215,18 @@ input: < pos(😶) (50.6473)% >
 > **.**
 
 ```python
-sentiment.print_predict("idk how i feel anymore.")
+sentiment.predict_print("idk how i feel anymore.")
 ...
 input: < neg(😬) (36.1655)% >
 ```
 
-**Textblob** vs ***SentimentModel*** trained on `1132` samples and `100` epochs.
+> Test on the un-trainable set
+
+```python
+from david_sentiment import test_untrained
+# you can pass any iterable of sequences of strings or/and labels.
+test_untrained(sentiment, untrainable, k=16)
+```
 
 ```markdown
 💬 <old=0.0, new=96.3195, label=1>
@@ -293,7 +292,7 @@ from david_sentiment import SentimentConfig, SentimentModel
 config = SentimentConfig.load_project('my-model/config.ini')
 sentiment = SentimentModel(config)
 print(sentiment)
-'<SentimentModel(max_seqlen=62, vocab_shape=(2552, 100))>'
+'<SentimentModel(max_seqlen=62, vocab_size=(2552, 100))>'
 ```
 
 The parameters, model, and tokenizer are loaded automatically after passing the config object to the SentimentModel class.

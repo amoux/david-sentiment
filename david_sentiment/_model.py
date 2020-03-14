@@ -1,6 +1,6 @@
 from dataclasses import asdict
 from os import path
-from typing import Any, Iterable, List, Sequence, Tuple, Dict
+from typing import Any, Dict, Iterable, List, Sequence, Tuple, Union
 
 import numpy as np
 from david.models import GloVe
@@ -44,50 +44,65 @@ class SentimentModel(SentimentConfig):
             self._load_model_and_tokenizer()
 
     @property
-    def embedding_layer(self) -> Tuple[int, int, int]:
-        """Embedding layer representation of shape `(nsamples, ndim, lg-sequence)`."""
-        if self.vocab_shape is not None:
-            if self.max_seqlen is not None:
-                return (self.vocab_shape[0], self.vocab_shape[1], self.max_seqlen)
+    def input_shape(self) -> Tuple[int, int, int]:
+        """Return the input shape representation: `(vocab_size, ndim, max_seqlen)`."""
+        ndim = int(self.ndim.replace('d', ''))
+        return (self.vocab_size, ndim, self.max_seqlen)
 
-    def embedding(self, l2=1e-6, ndim: str = None, trainable=False, mask_zero=False):
-        """Fit the vocabulary to glove's embedding vectors.
+    def embedding(self, module: str = None, ndim: str = None, l2=1e-6):
+        """Build the embedding layer with GloVe vectors.
 
-        `mask_zero`: Note, masking is not supported for `Flatten()` layers.
-        `trainable`: Whether to freeze the embedding layer. When parts of the model
-            are pre-trained (embedding-layer), and parts are randomly initialized
-            like (classifier), the pre-trained should not be updated at training
-            to avoid forgetting what the weights already know. The large gradient
-            update triggered by the randomly initialized layers would be very
-            disruptive to the already leaned features.
+        - The embedding layer can be built with one of the following:
+
+            - module: `6b`    -> glove.6B | `'50d', '200d', '100d', '300d'`
+            - module: `27b`   -> glove.twitter.27B | `'25d', '50d', '100d', '200d'`
+            - module: `42b`   -> glove.42B | `'300d'`
+            - module: `840b`  -> glove.840B | `'300d'`
+
         """
-        if not trainable:
-            trainable = self.trainable
-        if ndim is None:
-            ndim = self.glove_ndim
-        vocab_index = self.tokenizer.vocab_index
-        vocab_matrix = GloVe.fit_embeddings(vocab_index, ndim)
-        l2_regulizer = L1L2(l2=l2) if l2 != 0 else None
-        embedding_layer = Embedding(name="embedding",
-                                    input_dim=vocab_matrix.shape[0],
-                                    output_dim=vocab_matrix.shape[1],
-                                    weights=[vocab_matrix],
-                                    mask_zero=mask_zero,
-                                    input_length=self.max_seqlen,
-                                    trainable=trainable,)
+        if ndim is not None:
+            self.ndim = ndim
+        else:
+            ndim = self.ndim
 
-        self.vocab_shape = vocab_matrix.shape
+        glove_module = None
+        if module is not None and isinstance(module, str):
+            if module.lower() in GloVe.modules:
+                glove_module = GloVe(module)
+            else:
+                modules = set(GloVe.modules.keys())
+                raise ValueError(f"'{module}' not in {modules}.")
+        else:
+            raise TypeError("Module name needs to be of str type "
+                            "found, {}.".format(type(module)))
+    
+        name = f"GloVe-{module.upper()}-{ndim}"
+
+        matrix = glove_module(ndim=ndim, vocab=self.tokenizer.vocab_index)
+        l2_regulizer = L1L2(l2=l2) if l2 != 0 else None
+        embedding_layer = Embedding(name=name,
+                                    input_dim=matrix.shape[0],
+                                    output_dim=matrix.shape[1],
+                                    weights=[matrix],
+                                    mask_zero=False,
+                                    input_length=self.max_seqlen,
+                                    trainable=False)
+
+        self.vocab_size = matrix.shape[0]
         return embedding_layer
 
-    def compile_network(self, model=None, layer=None, task="pre-trained", return_model=True):
+    def compile_net(self, model=None, layer=None, mode="pre-trained", return_model=True):
         """Compile a network to the model for a specific learning task.
 
-        `task`: Learning modes for two different tasks:
-            `pre-trained` - learning from pre-trained embeddings (default - mode)
-            `ad-hoc`      - learning a task-specific embedding from the document's vocabulary.
+        `mode`: learning mode for a type of task.
+
+        - learning modes:
+            - `pre-trained` : learning from pre-trained vectors (default).
+            - `ad-hoc`      : learning from document's vectors, task-specific.
         """
 
         def pretrained(model, layer):
+            model.name = "david-sentiment (PT)"
             model.add(layer)
             model.add(Flatten())
             model.add(Dense(32, activation="relu"))
@@ -98,8 +113,9 @@ class SentimentModel(SentimentConfig):
             return model
 
         def adhoc(model, layer):
-            maxtoks, ndim, maxlen = layer
-            model.add(Embedding(maxtoks, ndim, input_length=maxlen))
+            model.name = "david-sentiment (AH)"
+            vocab_size, ndim, max_seqlen = layer
+            model.add(Embedding(vocab_size, ndim, input_length=max_seqlen))
             model.add(Flatten())
             model.add(Dense(32, activation="relu"))
             model.add(Dense(1, activation="sigmoid"))
@@ -108,12 +124,14 @@ class SentimentModel(SentimentConfig):
                           metrics=["acc"])
             return model
 
-        if task == "pre-trained":
+        if mode.lower() == "pre-trained":
             if layer is not None and isinstance(layer, Embedding):
                 model = pretrained(Sequential() if model is None else model, layer)
-        elif task == "ad-hoc":
+
+        elif mode.lower() == "ad-hoc":
             if layer is not None and len(layer) == 3:
                 model = adhoc(Sequential() if model is None else model, layer)
+
         if not return_model:
             self.model = model
         else:
@@ -136,7 +154,7 @@ class SentimentModel(SentimentConfig):
             raise ValueError("Please check your objects.")
 
         if mincount is None:
-            mincount = self.min_vocab_count
+            mincount = self.mincount
 
         split_ratio = int(split_ratio * int(len(labels)))
         x_train = data[:-split_ratio]
@@ -154,11 +172,23 @@ class SentimentModel(SentimentConfig):
         self.max_seqlen = largest_sequence(x_train)
         x_train = pad_sequences(x_train, self.max_seqlen, padding=self.padding)
         x_test = pad_sequences(x_test, self.max_seqlen, padding=self.padding)
+
+        self.vocab_size = self.tokenizer.vocab_size + 1
         return x_train, y_train, x_test, y_test
 
-    def train(self, x=None, y=None, epochs: int = None, split_ratio=0.2,
-              batch_size=32, l2=1e-6, ndim: str = None, segment=True,
-              return_datasets=False):
+    def train(
+        self,
+        x=None,
+        y=None,
+        epochs: int = None,
+        split_ratio=0.2,
+        batch_size=32,
+        l2=1e-6,
+        ndim: str = None,
+        module="6b",
+        segment=True,
+        return_datasets=False,
+    ):
         """Initialize training - transforming texts, labels and compiling the model.
 
         NOTE: Model will be of task pre-trained (GloVe Embeddings)
@@ -166,18 +196,16 @@ class SentimentModel(SentimentConfig):
         if epochs is None:
             epochs = self.epochs
         if ndim is None:
-            ndim = self.glove_ndim
-        x1, y1, x2, y2 = self.transform(x, y, segment=segment,
-                                        split_ratio=split_ratio)
-        layer = self.embedding(l2=l2, ndim=ndim)
-        self.compile_network(task="pre-trained",
-                             layer=layer,
-                             return_model=False)
+            ndim = self.ndim
+        x1, y1, x2, y2 = self.transform(x, y, segment=segment, split_ratio=split_ratio)
+
+        layer = self.embedding(module, l2=l2, ndim=ndim)
+        self.compile_net(mode="pre-trained", layer=layer, return_model=False)
         self.model.fit(x1, y1,
-                       epochs=epochs,
-                       batch_size=batch_size,
-                       verbose=1,
-                       validation_data=(x2, y2),)
+                      epochs=epochs,
+                      batch_size=batch_size,
+                      verbose=1,
+                      validation_data=(x2, y2))
 
         if return_datasets:
             return x1, y1, x2, y2
@@ -221,7 +249,7 @@ class SentimentModel(SentimentConfig):
         else:
             return (0, rounded_score)
 
-    def print_predict(self, text: str, k=0.5) -> None:
+    def predict_print(self, text: str, k=0.5) -> None:
         """Pretty print the prediction from a given string sequence."""
         label, score = self.predict(text, k=k)
         emoji = nearest_emoji(score)
@@ -258,7 +286,5 @@ class SentimentModel(SentimentConfig):
         return sentiment_obj
 
     def __repr__(self):
-        """Print the instance PEP8."""
-        return "<SentimentModel(max_seqlen={}, vocab_shape={})>".format(
-            self.max_seqlen, self.vocab_shape
-        )
+        return "<SentimentModel(vocab_size={}, ndim={}, max_seqlen={})>".format(
+            self.vocab_size, self.ndim.replace("d", ""), self.max_seqlen)

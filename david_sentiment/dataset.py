@@ -5,7 +5,7 @@ from typing import Any, Iterable, List, NewType, Set, Tuple, Union
 
 import numpy as np
 import spacy
-from david.datasets import YTCommentsDataset as YTComments
+from david.datasets import YTCommentsDataset as _YTComments
 from david.server import CommentsSql
 from david.text import (normalize_whitespace, remove_punctuation,
                         unicode_to_ascii)
@@ -18,6 +18,26 @@ _Trainable = NewType("TrainableDataset", List[Tuple[str, int]])
 _Untrainable = NewType("UntrainableDataset", List[Tuple[str, float]])
 _Tx = List[Tuple[Any, int]]
 _Ts = Tuple[Iterable[Any], Iterable[int]]
+
+
+class YouTubeComments:
+    # Temporary patch to the ugly as fuck method names
+    # I gave to the YTCommentsDataset. TODO: Refactor this.
+
+    @staticmethod
+    def texts():
+        """Return a generator of iterable string sequences."""
+        return _YTComments.load_dataset_as_doc()
+
+    @staticmethod
+    def split(samples: int, subset=0.8):
+        """Split a subset from k samples and return in form (train, test)."""
+        return _YTComments.split_train_test(samples, subset)
+
+    @staticmethod
+    def df():
+        """Return the dataset as a DataFrame."""
+        return _YTComments.load_dataset_as_df()
 
 
 @dataclass
@@ -188,7 +208,7 @@ def batch_to_texts(batch: List[str], maxlen: int) -> List[str]:
 def texts_to_sents(texts: List[str], minlen: int, spacy_model="en_core_web_sm"):
     """Transform texts to to sentences using spaCy's sentence tokenizer.
     
-    `mincount`: Skip any strings of length less than a given minimum value. 
+    `minlen`: Skip any strings of length less than a given minimum value. 
     """
     nlp = spacy.load(spacy_model)
     msg.warn(f" tokenizing strings to sentences, spaCy model: {spacy_model}.")
@@ -208,11 +228,9 @@ def texts_to_sents(texts: List[str], minlen: int, spacy_model="en_core_web_sm"):
     return sentences
 
 
-def build_dataset(
-    batch: Union[BatchDB, GeneratorType, List[str]],
-    config: _SentimentConfig,
-    untrainable=False,
-) -> Union[_Trainable, _Untrainable]:
+def build_dataset(batch: Union[BatchDB, GeneratorType, List[str]],
+                  config: _SentimentConfig,
+                  untrainable=False) -> Union[_Trainable, _Untrainable]:
     """Build a training dataset from db batch or an iterable of strings.
 
     `untrainable`: Whether to return the dataset with no polarity labels

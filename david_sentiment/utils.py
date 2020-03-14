@@ -42,19 +42,17 @@ enforce_ascii: {enforce_ascii}
 reduce_length: {reduce_length}
 preserve_case: {preserve_case}
 strip_handles: {strip_handles}
-min_vocab_count: {min_vocab_count}
+mincount: {mincount}
 max_seqlen: {max_seqlen}
-glove_ndim: {glove_ndim}
-vocab_shape: {vocab_shape}
+ndim: {ndim}
+vocab_size: {vocab_size}
 [Model]
 activation: {activation}
-trainable: {trainable}
 epochs: {epochs}
-loss: {loss}
 optimizer: {optimizer}
 padding: {padding}
 [Output]
-project_dir: {project_dir}
+project: {project}
 model_file: {model_file}
 vocab_file: {vocab_file}
 vectors_file: {vectors_file}
@@ -160,7 +158,7 @@ def INIFileConfig(filename: str, template: str = None, exist_ok=False):
         return template_lines
 
 
-def interactive_session(sentiment: _SentimentModel, threshold=0.5, stopflag="quit") -> None:
+def test_interactive(sentiment: _SentimentModel, threshold=0.5, stopflag="quit"):
     """Test a trained model interactively with your inputs.
 
     `sentiment`: class instance of a SentimentModel `predict()` is called.
@@ -178,9 +176,9 @@ def interactive_session(sentiment: _SentimentModel, threshold=0.5, stopflag="qui
             continue
 
 
-def test_unseen_samples(sentiment: _SentimentModel,
-                        test_data: Union[List[Tuple[str, float]], List[str]],
-                        threshold=0.5, k: int = 10) -> None:
+def test_untrained(sentiment: _SentimentModel,
+                   test_data: Union[List[Tuple[str, float]], List[str]],
+                   threshold=0.5, k: int = 10):
     """Predict sentiment scores on a test dataset with texts with/or without scores."""
     if isinstance(test_data, list):
         if not isinstance(test_data[0], tuple):
@@ -193,46 +191,13 @@ def test_unseen_samples(sentiment: _SentimentModel,
         print(f"💬 <old={y_score}, new={x_score}, label={label}>\n {emoji} - {text}\n")
 
 
-def test_polarity_distance(sentiment: _SentimentModel, ntest=1) -> None:
-    """Perform a simple test on words:`love` and `hate` at different positions.
-
-    `ntest`: Up-to five different tests `ntest=5` prints all tests.
-    """
+def test_simple(sentiment: _SentimentModel):
+    """Perform a simple test on words:`love` and `hate` at different positions."""
     face = {"pos": ":)", "neg": ":("}
     emoji = {"pos": "😍", "neg": "😡"}
     textA = "I love this, but hate it"
     textB = "I hate this, but love it"
-    textC = normalize_whitespace(remove_punctuation(textA))
-    textD = normalize_whitespace(remove_punctuation(textB))
-    # alway print some result for the friendly user.
-    ntest = (5 or 1) if (ntest < 1 or ntest > 5) else ntest
-    if ntest >= 1:
-        print("* -- sentiment with punctuation -- *\n")
-        sentiment.print_predict("{} {}".format(textB, face["pos"]))
-        sentiment.print_predict("{} {}".format(textA, face["pos"]))
-        sentiment.print_predict("{} {}".format(textB, face["neg"]))
-        sentiment.print_predict("{} {}".format(textA, face["neg"]))
-    if ntest >= 2:
-        print("\n* -- sentiment without punctuation -- *\n")
-        sentiment.print_predict("{} {}".format(textD, face["pos"]))
-        sentiment.print_predict("{} {}".format(textC, face["pos"]))
-        sentiment.print_predict("{} {}".format(textD, face["neg"]))
-        sentiment.print_predict("{} {}".format(textC, face["neg"]))
-    if ntest >= 3:
-        print("\n* -- sentiment without emoticons -- *\n")
-        sentiment.print_predict("{}".format(textD))
-        sentiment.print_predict("{}".format(textC))
-        sentiment.print_predict("{}".format(textD))
-        sentiment.print_predict("{}".format(textC))
-    if ntest >= 4:
-        print("\n* -- sentiment with emoji's -- *\n")
-        sentiment.print_predict("{} {}".format(textB, emoji["pos"]))
-        sentiment.print_predict("{} {}".format(textA, emoji["pos"]))
-        sentiment.print_predict("{} {}".format(textB, emoji["neg"]))
-        sentiment.print_predict("{} {}".format(textA, emoji["neg"]))
-    if ntest >= 5:
-        print("\n* -- sentiment with emoji's & no punctuation -- *\n")
-        sentiment.print_predict("{} {}".format(textD, emoji["pos"]))
-        sentiment.print_predict("{} {}".format(textC, emoji["pos"]))
-        sentiment.print_predict("{} {}".format(textD, emoji["neg"]))
-        sentiment.print_predict("{} {}".format(textC, emoji["neg"]))
+    sentiment.predict_print("{} {}".format(textB, face["pos"]))
+    sentiment.predict_print("{} {}".format(textA, face["pos"]))
+    sentiment.predict_print("{} {}".format(textB, face["neg"]))
+    sentiment.predict_print("{} {}".format(textA, face["neg"]))

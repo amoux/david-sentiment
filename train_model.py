@@ -1,13 +1,13 @@
 import david_sentiment.dataset as ds
 from david_sentiment import SentimentConfig, SentimentModel
 from david_sentiment.utils import (test_polarity_attention_weights,
-                                   test_unseen_samples)
+                                   test_untrained)
 
 config = SentimentConfig(
-    project_dir="model-001",
+    project="model-001",
     min_strlen=20,
     max_strlen=10000,
-    min_vocab_count=1,
+    mincount=1,
     reduce_length=True,
     remove_urls=True,
 )
@@ -28,7 +28,7 @@ ytc_sentiment.train_model(x_texts, x_labels)
 # test the model with some demo functions
 print("\ntesting the model...")
 test_polarity_attention_weights(ytc_sentiment)
-test_unseen_samples(ytc_sentiment, y_tests, print_k=50)
+test_untrained(ytc_sentiment, y_tests, print_k=50)
 
 # save the model
 print("\nsaving the model...")

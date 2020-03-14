@@ -7,6 +7,22 @@ from keras.models import load_model
 
 from .utils import INI_TEMPLATE_MODEL_CONFIG, INIFileConfig
 
+int_config_args = [
+    "vocab_size",
+    "max_seqlen",
+    "mincount",
+    "max_strlen",
+    "min_strlen",
+    "epochs",
+]
+bool_config_args = [
+    "remove_urls",
+    "enforce_ascii",
+    "reduce_length",
+    "preserve_case",
+    "strip_handles",
+]
+
 
 def create_project_structure(config, clear_first=False, exist_ok=False):
     """Create root-directory, sub-directories and attach the config, model, vocab file paths.
@@ -15,13 +31,13 @@ def create_project_structure(config, clear_first=False, exist_ok=False):
     `clear_first`: Whether to clear the paths in place (if any)
         before attaching the created paths.
     """
-    project_dir = Path(config.project_dir)
-    if not project_dir.exists():
-        project_dir.mkdir(exist_ok=exist_ok)
-    model_path = project_dir.joinpath("model")
+    project = Path(config.project)
+    if not project.exists():
+        project.mkdir(exist_ok=exist_ok)
+    model_path = project.joinpath("model")
     if not model_path.exists():
         model_path.mkdir(exist_ok=exist_ok)
-    vocab_path = project_dir.joinpath("vocab")
+    vocab_path = project.joinpath("vocab")
     if not vocab_path.exists():
         vocab_path.mkdir(exist_ok=exist_ok)
 
@@ -31,41 +47,42 @@ def create_project_structure(config, clear_first=False, exist_ok=False):
         config.vocab_file = "vocab.txt"
         config.vectors_file = "vectors.pkl"
 
-    config.project_dir = project_dir
+    config.project = project
     config.model_file = model_path.joinpath(config.model_file)
     config.vocab_file = vocab_path.joinpath(config.vocab_file)
     config.vectors_file = vocab_path.joinpath(config.vectors_file)
-    config.config_file = project_dir.joinpath(config.config_file)
+    config.config_file = project.joinpath(config.config_file)
     return config
 
 
 @dataclass
 class SentimentConfig:
-    """Main configurator for preprocessing, tokenizer and embedding model."""
+    """Main configurator for preprocessing, tokenizer and embedding model.
 
+    optimizers: `adam`, `rmsprop`
+    """
+
+    project: str = "sm-model"
     min_strlen: int = 20
-    max_strlen: int = 6000
+    max_strlen: int = 1000
+    mincount: int = 1
+    epochs: int = 10
+    ndim: str = "100d"
     spacy_model: str = "en_core_web_sm"
     remove_urls: bool = True
     enforce_ascii: bool = True
     reduce_length: bool = True
     preserve_case: bool = False
     strip_handles: bool = False
-    min_vocab_count: int = 1
-    glove_ndim: str = "100d"
-    epochs: int = 45
-    trainable: bool = False
     padding: str = "post"
-    loss: str = "binary_crossentropy"
     optimizer: str = "adam"
     activation: str = "sigmoid"
-    project_dir: str = "sentiment_model"
     model_file: str = "model.h5"
     vocab_file: str = "vocab.txt"
     vectors_file: str = "vectors.pkl"
     config_file: str = "config.ini"
     max_seqlen: int = None
-    vocab_shape: Tuple[int, int] = None
+    vocab_size: int = None
 
     def _init_project(self, clear_first=False, exist_ok=False, template=None):
         self = create_project_structure(self, clear_first, exist_ok=exist_ok)
@@ -88,10 +105,17 @@ class SentimentConfig:
         """Load an existing project's state from a `config.ini` file."""
         if filename is None:
             filename = SentimentConfig.config_file
+
         kwargs = {}
         for section in INIFileConfig(filename).values():
             for arg, value in section.items():
-                kwargs[arg] = value
+                if arg in int_config_args:
+                    kwargs[arg] = int(value)
+                elif arg in bool_config_args:
+                    kwargs[arg] = bool(value)
+                else:
+                    kwargs[arg] = value
+
         return SentimentConfig(**kwargs)
 
     def save_project(self, exist_ok=False):
