@@ -112,7 +112,7 @@ len(x_train), len(x_test)
 Getting the embedding layer for the model. `[50d, 100d, 200d, 300d]` available.
 
 ```python
-embedding_layer = sentiment.embedding(module="6b", ndim="300d", l2=1e-6)
+embedding = sentiment.embedding(module="6b", ndim="300d", l2=1e-6)
 ...
 ✔ '<(dim=300, vocab=13147)>'
 ✔ 'embedding vocabulary 👻'
