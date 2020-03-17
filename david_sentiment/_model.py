@@ -93,6 +93,7 @@ class SentimentModel(SentimentConfig):
                                     input_dim=matrix.shape[0],
                                     output_dim=matrix.shape[1],
                                     weights=[matrix],
+                                    embeddings_regularizer=l2_regulizer,
                                     mask_zero=False,
                                     input_length=self.max_seqlen,
                                     trainable=False)
@@ -147,8 +148,11 @@ class SentimentModel(SentimentConfig):
             return model
 
     def transform(self, x=None, y=None, mincount: int = None,
-                  split_ratio=0.2, segment=True, extra_vocab=None):
-        """Transform texts and its labels to (x1, y1), (x2, y2)."""
+                  split_ratio=0.2, segment=True, test_vocab=None):
+        """Transform texts and its labels to (x1, y1), (x2, y2).
+
+        `test_vocab`: Iterable document of strings to extend the vocabulary.
+        """
         if x is not None and y is None:
             if segment:
                 data, labels = segment_binary_dataset(x, True)
@@ -163,15 +167,19 @@ class SentimentModel(SentimentConfig):
         else:
             raise ValueError("Data is not an iterable of list or tuple"
                              f", got {type(x or y)}.")
-
         if mincount is None:
             mincount = self.mincount
 
-        split_ratio = int(split_ratio * int(len(labels)))
+        split_ratio = int(split_ratio * len(labels))
         x_train = data[:-split_ratio]
         y_train = labels[:-split_ratio]
         x_test = data[-split_ratio:]
         y_test = labels[-split_ratio:]
+
+        if test_vocab is not None:
+            if isinstance(test_vocab[0], tuple):
+                data2, _ = zip(*test_vocab)
+            data = data + data2
 
         self.tokenizer.fit_on_document(document=data)
         self.tokenizer.fit_vocabulary(mincount=mincount)

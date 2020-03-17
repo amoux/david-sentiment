@@ -77,6 +77,7 @@ def plot_losses(history, fmt1="c>", fmt2="m", show=True, save=False, name="loss.
     if hasattr(history, "history"):
         history = history.history
 
+    plt.clf()
     acc = history["acc"]
     loss = history["loss"]
     val_acc = history["val_acc"]
@@ -103,6 +104,7 @@ def plot_accuracy(history, fmt1="c>", fmt2="m", show=True, save=False, name="acc
     if hasattr(history, "history"):
         history = history.history
 
+    plt.clf()
     acc = history["acc"]
     val_acc = history["val_acc"]
     epochs = range(1, len(acc) + 1)
