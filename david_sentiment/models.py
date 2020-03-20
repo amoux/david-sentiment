@@ -5,8 +5,8 @@ from keras import layers, models, optimizers
 from keras.preprocessing.sequence import pad_sequences
 
 
-class BirectionalRNN:
-    """Simple Birectional RNN|LSTM Model"""
+class BidirectionalRNN:
+    """Simple Bidirectional RNN|LSTM Model"""
 
     def __init__(self, vocab_size: int, ndim: int, maxlen: int):
         self.vocab_size = vocab_size
