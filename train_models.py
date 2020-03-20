@@ -63,7 +63,7 @@ def cnn_lstm_model():
     epochs = 5
     batch_size = 30
 
-    model = Sequential(name="Sentiment (CNN-LSTM)")
+    model = Sequential(name="SentimentModel (CNN-LSTM)")
     model.add(layers.Embedding(name=embedd_name,
                                input_dim=vocab_size,
                                output_dim=ndim,

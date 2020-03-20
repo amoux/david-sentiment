@@ -1,6 +1,6 @@
 # david-sentiment
 
-## Unsupervised Sentiment Models
+## Unsupervised SentimentModel Models
 
 - Train a custom sentiment model with just a few lines of code - Making it easy to try different configurations or preprocessing techniques. No labeled data? Don't worry there's an easier way - see below!
 
@@ -67,7 +67,7 @@ sequences: 100%|██████████| 61478/61478 [00:54<00:00, 1130.3
 ℹ  trainable: 73356, un-trainable: 68986
 ```
 
-## Building a Sentiment Model
+## Building a SentimentModel Model
 
 There's two ways to train a model - with a `one-liner` or `step-by-step`.
 

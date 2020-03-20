@@ -18,7 +18,7 @@ from .utils import nearest_emoji
 
 
 class SentimentModel(SentimentConfig):
-    """Sentiment model class."""
+    """SentimentModel model class."""
 
     __config_loaded_from_file = False
 
