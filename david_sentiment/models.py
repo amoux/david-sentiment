@@ -6,7 +6,7 @@ from keras.preprocessing.sequence import pad_sequences
 
 
 class BidirectionalRNN:
-    """Simple Bidirectional RNN|LSTM Model"""
+    """Train a Simple Bidirectional LSTM Model."""
 
     def __init__(self, vocab_size: int, ndim: int, maxlen: int):
         self.vocab_size = vocab_size
@@ -25,7 +25,7 @@ class BidirectionalRNN:
         """RNN layer model definition."""
         model = models.Sequential(name="Bidirectional RNN|LSTM")
         model.add(layers.Embedding(self.vocab_size, self.ndim))
-        model.add(layers.LSTM(lstm_output))
+        model.add(layers.Bidirectional(layers.LSTM(lstm_output)))
         model.add(layers.Dense(1, activation="sigmoid"))
         model.compile(optimizer="rmsprop", loss="binary_crossentropy", metrics=["acc"])
         return model
