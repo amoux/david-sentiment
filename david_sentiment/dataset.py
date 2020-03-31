@@ -184,19 +184,17 @@ def textblob_meta_learner(document: List[str], return_untrainable=False):
 def batch_to_texts(batch: List[str], maxlen: int) -> List[str]:
     """Transform a batch to an iterable of string sequences (texts).
 
-    NOTE: Filtering of small strings is done in the `texts_to_sents()`
-    method. Since the strings are tokenized to sentences. Lastly, any
-    existing (duplicated) strings are skipped.
-
     `maxlen`: Skip any strings of length greater than a given maximum value.
+
+    Returns a new iterable of unique string sequences.
     """
     batch_size = len(batch)
     msg.warn(f" normalizing {batch_size} string sequences from batch.")
 
     texts: List[str] = []
-    for string in tqdm(batch, desc="sequences", unit=""):
+    for string in tqdm(sorted(set(batch)), desc="sequences", unit=""):
         string = preprocess_string(string)
-        if len(string) <= maxlen and string not in texts:
+        if len(string) <= maxlen:
             texts.append(string)
 
     large_strings = batch_size - len(texts)
