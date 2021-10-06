@@ -1,7 +1,5 @@
 # david-sentiment
 
-> QAAM (Question Answering Auto Model)
-
 NOTE: The project is unmaintained; I wrote the code when I started programming and to gain intuition with NLP.
 
 ## Unsupervised SentimentModel Models
